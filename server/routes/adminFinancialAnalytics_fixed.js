@@ -1,0 +1,258 @@
+// Admin Financial Analytics API routes
+import express from 'express';
+import { PrismaClient } from '@prisma/client';
+
+const router = express.Router();
+const prisma = new PrismaClient();
+
+// Get financial analytics with filtering
+router.get('/earnings', async (req, res) => {
+  try {
+    const { 
+      period = 'daily', 
+      startDate, 
+      endDate, 
+      page = 1,
+      limit = 50 
+    } = req.query;
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const offset = (pageNum - 1) * limitNum;
+
+    // Calculate date range based on period
+    let dateFilter = {};
+    const now = new Date();
+    
+    if (startDate && endDate) {
+      dateFilter = {
+        gte: new Date(startDate),
+        lte: new Date(endDate)
+      };
+    } else {
+      switch (period) {
+        case 'daily':
+          dateFilter = {
+            gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+            lte: now
+          };
+          break;
+        case 'weekly':
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          dateFilter = {
+            gte: weekAgo,
+            lte: now
+          };
+          break;
+        case 'monthly':
+          const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+          dateFilter = {
+            gte: monthAgo,
+            lte: now
+          };
+          break;
+      }
+    }
+
+    // Get deposit earnings
+    const depositEarnings = await prisma.depositRequest.aggregate({
+      where: {
+        createdAt: dateFilter,
+        status: 'approved'
+      },
+      _sum: {
+        amount: true
+      },
+      _count: {
+        id: true
+      }
+    });
+
+    // Get withdraw amounts
+    const withdrawAmounts = await prisma.withdrawRequest.aggregate({
+      where: {
+        createdAt: dateFilter,
+        status: 'approved'
+      },
+      _sum: {
+        amount: true
+      },
+      _count: {
+        id: true
+      }
+    });
+
+    // Get total current balance of all users
+    const totalUserBalance = await prisma.userBalance.aggregate({
+      _sum: {
+        currentBalance: true
+      }
+    });
+
+    // Calculate earnings using the correct formula:
+    // Net Earnings = Total Approved Deposits - Users' Current Balance - Total Approved Withdrawals
+    const totalDepositsAmount = depositEarnings._sum.amount || 0;
+    const totalWithdrawsAmount = withdrawAmounts._sum.amount || 0;
+    const totalCurrentBalance = totalUserBalance._sum.currentBalance || 0;
+    const netEarnings = totalDepositsAmount - totalCurrentBalance - totalWithdrawsAmount;
+
+    res.json({
+      success: true,
+      data: {
+        period,
+        dateRange: dateFilter,
+        earnings: {
+          totalDeposits: totalDepositsAmount,
+          totalWithdraws: totalWithdrawsAmount,
+          totalUserBalance: totalCurrentBalance,
+          netEarnings,
+          depositCount: depositEarnings._count.id,
+          withdrawCount: withdrawAmounts._count.id
+        },
+        summary: {
+          averageDailyEarnings: netEarnings / 1,
+          profitMargin: totalDepositsAmount > 0 ? ((netEarnings / totalDepositsAmount) * 100) : 0
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching financial analytics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch financial analytics'
+    });
+  }
+});
+
+// Get financial summary statistics
+router.get('/financial-summary', async (req, res) => {
+  try {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+
+    // Get total current balance of all users
+    const totalUserBalance = await prisma.userBalance.aggregate({
+      _sum: {
+        currentBalance: true
+      }
+    });
+
+    // Total earnings (all time)
+    const totalDeposits = await prisma.depositRequest.aggregate({
+      where: { status: 'approved' },
+      _sum: { amount: true },
+      _count: { id: true }
+    });
+
+    const totalWithdraws = await prisma.withdrawRequest.aggregate({
+      where: { status: 'approved' },
+      _sum: { amount: true },
+      _count: { id: true }
+    });
+
+    // Today's earnings
+    const todayDeposits = await prisma.depositRequest.aggregate({
+      where: {
+        createdAt: { gte: today },
+        status: 'approved'
+      },
+      _sum: { amount: true },
+      _count: { id: true }
+    });
+
+    const todayWithdraws = await prisma.withdrawRequest.aggregate({
+      where: {
+        createdAt: { gte: today },
+        status: 'approved'
+      },
+      _sum: { amount: true },
+      _count: { id: true }
+    });
+
+    // Weekly earnings
+    const weekDeposits = await prisma.depositRequest.aggregate({
+      where: {
+        createdAt: { gte: weekAgo },
+        status: 'approved'
+      },
+      _sum: { amount: true },
+      _count: { id: true }
+    });
+
+    const weekWithdraws = await prisma.withdrawRequest.aggregate({
+      where: {
+        createdAt: { gte: weekAgo },
+        status: 'approved'
+      },
+      _sum: { amount: true },
+      _count: { id: true }
+    });
+
+    // Monthly earnings
+    const monthDeposits = await prisma.depositRequest.aggregate({
+      where: {
+        createdAt: { gte: monthAgo },
+        status: 'approved'
+      },
+      _sum: { amount: true },
+      _count: { id: true }
+    });
+
+    const monthWithdraws = await prisma.withdrawRequest.aggregate({
+      where: {
+        createdAt: { gte: monthAgo },
+        status: 'approved'
+      },
+      _sum: { amount: true },
+      _count: { id: true }
+    });
+
+    // Calculate earnings using the correct formula:
+    // Net Earnings = Total Approved Deposits - Users' Current Balance - Total Approved Withdrawals
+    const calculateEarnings = (deposits, withdraws, userBalance) => {
+      const totalDeposits = deposits._sum.amount || 0;
+      const totalWithdraws = withdraws._sum.amount || 0;
+      const totalBalance = userBalance._sum.currentBalance || 0;
+      return {
+        totalDeposits,
+        totalWithdraws,
+        totalUserBalance: totalBalance,
+        netEarnings: totalDeposits - totalBalance - totalWithdraws,
+        depositCount: deposits._count.id,
+        withdrawCount: withdraws._count.id
+      };
+    };
+
+    const totalEarnings = calculateEarnings(totalDeposits, totalWithdraws, totalUserBalance);
+    const todayEarnings = calculateEarnings(todayDeposits, todayWithdraws, totalUserBalance);
+    const weekEarnings = calculateEarnings(weekDeposits, weekWithdraws, totalUserBalance);
+    const monthEarnings = calculateEarnings(monthDeposits, monthWithdraws, totalUserBalance);
+
+    res.json({
+      success: true,
+      data: {
+        totalEarnings,
+        todayEarnings,
+        weekEarnings,
+        monthEarnings,
+        metrics: {
+          totalTransactions: totalEarnings.depositCount + totalEarnings.withdrawCount,
+          averageDeposit: totalEarnings.depositCount > 0 ? totalEarnings.totalDeposits / totalEarnings.depositCount : 0,
+          profitMargin: totalEarnings.totalDeposits > 0 ? ((totalEarnings.netEarnings / totalEarnings.totalDeposits) * 100) : 0
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching financial summary:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch financial summary'
+    });
+  }
+});
+
+export default router;

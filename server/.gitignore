@@ -1,0 +1,10 @@
+node_modules
+dist/
+build/
+.DS_Store
+npm-debug.log
+
+/generated/prisma
+.env*
+*.local
+/prisma/seeds

@@ -1,0 +1,2 @@
+-- This migration was already applied to the database
+-- Creating empty migration file to resolve migration mismatch

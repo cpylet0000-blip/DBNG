@@ -1,0 +1,1 @@
+export  { KenoPage as KenoGame} from './KenoPage'

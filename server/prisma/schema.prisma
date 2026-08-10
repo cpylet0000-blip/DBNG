@@ -1,0 +1,624 @@
+// ==============================
+// DEPOSIT METHOD TABLE (CBE, BOA, Telebirr, etc.)
+// ==============================
+model DepositMethod {
+  id           Int      @id @default(autoincrement())
+  name         String   // e.g. "CBE", "BOA", "Telebirr"
+  accountInfo  String   // e.g. account number or phone
+  accountOwner String   // Name of the account owner
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ==============================
+// WITHDRAW LOCK TABLE (global lock for withdraw requests)
+// ==============================
+model WithdrawLock {
+  id        Int      @id @default(autoincrement())
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+// ==============================
+// REWARD RULE TABLE (defines how to get rewarded)
+// ==============================
+model RewardRule {
+  id                Int      @id @default(autoincrement())
+  numberOfGamePlay  Int      @default(0)
+  rewardAmount      Int      @default(0)
+  totalPlayerForReward Int   @default(0)
+  claimedCount      Int      @default(0)
+  comboCode         String?  @db.VarChar(255)
+  status            String   @default("active")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  rewards           Reward[]
+}
+
+// ==============================
+// REWARD TABLE (list of players trying to get reward)
+// ==============================
+model Reward {
+  id                Int      @id @default(autoincrement())
+  userId            Int
+  ruleId            Int
+  numberOfgamePlayed            Int   @default(0)
+  status            String   @default("pending")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id])
+  rule              RewardRule @relation(fields: [ruleId], references: [id])
+}
+// ADMIN USER TABLE
+// ==============================
+model AdminUser {
+  id       Int    @id @default(autoincrement())
+  email    String @unique @db.VarChar(255)
+  password String
+  createdAt DateTime @default(now())
+}
+
+// ==============================
+// DEPOSIT REQUEST TABLE
+// ==============================
+model DepositRequest {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  amount          Float
+  transactionId   String   @unique // Transaction reference from CBE
+  paymentDateTime String?  // Date and time from PDF
+  receiver        String?  // Receiver name from PDF
+  account         String?  // Account from PDF
+  status          String   @default("pending") // pending, approved, rejected
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id])
+}
+
+// ==============================
+// TRANSACTION TABLE (for all approved transactions)
+// ==============================
+model Transaction {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  amount          Float
+  transactionId   String   @unique // Transaction reference from CBE
+  paymentDateTime String?  // Date and time from PDF
+  receiver        String?  // Receiver name from PDF
+  account         String?  // Account from PDF
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id])
+}
+
+// ==============================
+// WITHDRAW REQUEST TABLE
+// ==============================
+model WithdrawRequest {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  amount    Float
+  status    String   @default("pending") // pending, approved, rejected
+  createdAt DateTime @default(now())
+  methodInfo String? @default("unset") // e.g. "tel:0912345678" or "cbe:1234567890"
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+// ==============================
+// GAME STATUS ENUM
+// ==============================
+enum GameStatus {
+  ACTIVE
+  PAUSED
+}
+// ==============================
+// LOTTERY TABLE
+// ==============================
+model Lottery {
+  id                 String    @id @default(uuid())
+  stake_amount       Float
+  total_tickets      Int
+  first_prize_amount Float
+  second_prize_amount Float
+  third_prize_amount Float
+  draw_date          DateTime
+  draw_time          DateTime
+  status             LotteryStatus @default(OPEN)
+  created_at         DateTime  @default(now())
+  tickets            LotteryTicket[]
+  winners            LotteryWinner[]
+}
+
+model LotteryTicket {
+  id           String   @id @default(uuid())
+  lotteryId    String
+  userId       Int?    // Optional, free by default
+  ticket_number Int
+  purchase_time DateTime? // Optional, free by default
+
+  lottery      Lottery  @relation(fields: [lotteryId], references: [id])
+  user         User?    @relation(fields: [userId], references: [id])
+
+  @@unique([lotteryId, ticket_number])
+}
+
+model LotteryWinner {
+  id           Int      @id @default(autoincrement())
+  lotteryId    String
+  userId       Int
+  ticketNumber Int
+  prizePosition Int
+  prizeAmount  Float
+  prizeName    String
+  createdAt    DateTime @default(now())
+  
+  lottery      Lottery  @relation(fields: [lotteryId], references: [id])
+  user         User     @relation(fields: [userId], references: [id])
+  
+  @@unique([lotteryId, prizePosition])
+}
+
+enum LotteryStatus {
+  OPEN
+  CLOSED
+  PAID
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+// ==============================
+// GAME TYPE ENUM FOR EARNINGS
+// ==============================
+enum GameType {
+  BINGO
+  AVATAR
+  LOTTERY
+  POKER
+  ROULETTE
+  TICTACTOE
+  SPIN_WIN
+
+}
+
+// ==============================
+// USER TABLE
+// ==============================
+model User {
+  id           Int              @id @default(autoincrement())
+  telegramId   String           @unique
+  username     String?
+  name         String?
+  userNumber     String?
+  rewardBalance  Int    @default(0)  // Reward balance (not real money)
+  createdAt    DateTime         @default(now())
+  banned       Boolean          @default(false)
+  activeInvitation  Int      @default(0)
+  totalInvitation   Int      @default(0)
+  numberOfTotalPlay Int      @default(0)
+  rewardPlay         Int      @default(0)
+  rewardChallenge    Int      @default(0)
+  sessions     PlayerSession[]
+  moves        Move[]
+  historiesWon GameHistory[]    @relation("UserWins")
+  balance      UserBalance?     // Link to user's wallet/balance
+  bingoSessions BingoSessionPlayer[]     // Link to bingo games
+  lotteryTickets LotteryTicket[] // Add the missing opposite relation field for LotteryTicket
+  lotteryWinners LotteryWinner[] // Add relation for lottery winners
+  depositRequests DepositRequest[]
+  withdrawRequests WithdrawRequest[]
+  rewards         Reward[]
+  transactions    Transaction[]
+  sentTransfers   TransferHistory[] @relation("TransferSender")
+  receivedTransfers TransferHistory[] @relation("TransferReceiver")
+  gamesBeforeFirstWin Int @default(0) // Number of games played before first win
+  leaderboardStats UserLeaderboardStat[]
+   spinWinSpins    SpinWinSpin[]
+  spinWinBets     SpinWinBet[]
+
+  spinWinJackpotWins SpinWinJackpotWin[]
+}
+
+model TransferHistory {
+  id         Int      @id @default(autoincrement())
+  senderId   Int
+  receiverId Int
+  amount     Float
+  createdAt  DateTime @default(now())
+
+  sender     User     @relation("TransferSender", fields: [senderId], references: [id])
+  receiver   User     @relation("TransferReceiver", fields: [receiverId], references: [id])
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+}
+
+// ==============================
+// USER BALANCE / WALLET
+// ==============================
+model UserBalance {
+  id             Int      @id @default(autoincrement())
+  userId         Int      @unique
+  totalDeposits  Float    @default(0)  // Sum of all deposits by user
+  currentBalance Float    @default(0)  // Current available balance (starter bonus)
+  totalLosses    Float    @default(0)  // Total losses from games
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id])
+}
+
+// ==============================
+// GAME TYPE TABLE (Bingo, XOX…)
+// ==============================
+model Game {
+   id        Int        @id @default(autoincrement())
+  name      String     @unique
+  image     String     @default("default_image.png")
+  to        String     @default("")
+  fullWidth Boolean    @default(false)
+  numberOfPlayed Int @default(0)
+  createdAt DateTime   @default(now())
+  status    GameStatus @default(ACTIVE)
+  sessions  GameSession[]
+}
+
+// ==============================
+// GAME SESSION (Room)
+// ==============================
+model GameSession {
+  id        Int              @id @default(autoincrement())
+  gameId    Int
+  status    String           @default("waiting")  // waiting, playing, finished
+  createdAt DateTime         @default(now())
+
+  game      Game             @relation(fields: [gameId], references: [id])
+  players   PlayerSession[]
+  moves     Move[]
+  history   GameHistory?
+}
+
+// ==============================
+// PLAYER SESSION (Players in a Room)
+// ==============================
+model PlayerSession {
+  id        Int           @id @default(autoincrement())
+  userId    Int
+  sessionId Int
+  score     Int           @default(0)
+  isWinner  Boolean       @default(false)
+  user      User          @relation(fields: [userId], references: [id])
+  session   GameSession   @relation(fields: [sessionId], references: [id])
+}
+// ==============================
+// MOVES TABLE (XOX moves, Bingo numbers…)
+// ==============================
+model Move {
+  id         Int          @id @default(autoincrement())
+  sessionId  Int
+  userId     Int?
+  position   String?      // XOX (like "A1")
+  number     Int?         // Bingo number
+  createdAt  DateTime     @default(now())
+
+  session    GameSession  @relation(fields: [sessionId], references: [id])
+  user       User?        @relation(fields: [userId], references: [id])
+}
+
+// ==============================
+// GAME HISTORY
+// ==============================
+model GameHistory {
+  id         Int          @id @default(autoincrement())
+  sessionId  Int @unique
+  winnerId   Int?
+  finishedAt DateTime      @default(now())
+
+  session    GameSession   @relation(fields: [sessionId], references: [id])
+  winner     User?         @relation("UserWins", fields: [winnerId], references: [id])
+}
+
+// ==============================
+// BINGO CARD (200 cards per stake level)
+// ==============================
+model BingoCard {
+  id            Int         @id @default(autoincrement())
+  cardId        Int         // 1-200
+  stake         Int         // 5, 10, 25, 50, 100
+  numbers       String      // JSON: [1,5,12,23,34,...]  25 numbers
+  
+  @@unique([stake, cardId])
+  @@index([stake])
+}
+
+// ==============================
+// BINGO GAME SESSION (One active per stake)
+// ==============================
+model BingoSession {
+  id              Int         @id @default(autoincrement())
+  stake           Int
+  roomNumber      Int         @default(1)
+  status          String      @default("waiting") // waiting, countdown, active, finished
+  calledNumbers   String      @default("[]") // JSON: [23,45,12,...]
+  countdownEndsAt DateTime?   // When game will start (30 seconds)
+  // Keep for backward compatibility, but now used for primary winner display
+  winnerId        Int?
+  winnerCardId    Int?
+  winnerName      String?
+  winPattern      String?     // "row-0", "col-2", "diag-1"
+  winningCells    String?     // JSON: [0,1,2,3,4] - cell indices
+  totalPrize      Float?      // Total prize pool for the game
+  winnersCount    Int         @default(0) // Number of winners
+  createdAt       DateTime    @default(now())
+  finishedAt      DateTime?
+  
+  players         BingoSessionPlayer[]
+
+  @@unique([stake, roomNumber])
+  @@index([stake])
+}
+
+// ==============================
+// BINGO SESSION PLAYER
+// ==============================
+model BingoSessionPlayer {
+  id            Int           @id @default(autoincrement())
+  sessionId     Int
+  userId        Int
+  cardId        Int           // 1-200
+  cardNumbers   String        // JSON: player's 25 numbers
+  markedCells   String        @default("[]") // JSON: [0,5,12,24]
+  autoMark      Boolean       @default(true)
+  prize         Float         @default(0)
+  joinedAt      DateTime      @default(now())
+  
+  session       BingoSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id])
+  
+  @@unique([sessionId, cardId])
+}
+
+// ==============================
+// BINGO SESSION ARCHIVE
+// ==============================
+model BingoSessionArchive {
+  id              Int      @id @default(autoincrement())
+  originalId      Int      // The original BingoSession.id
+  stake           Int
+  roomNumber      Int
+  status          String
+  calledNumbers   String
+  countdownEndsAt DateTime?
+  winnerId        Int?
+  winnerCardId    Int?
+  winnerName      String?
+  winPattern      String?
+  winningCells    String?
+  createdAt       DateTime
+  finishedAt      DateTime?
+  archivedAt      DateTime @default(now())
+
+  players         BingoSessionPlayerArchive[]
+}
+
+model BingoSessionPlayerArchive {
+  id            Int      @id @default(autoincrement())
+  originalId    Int      // The original BingoSessionPlayer.id
+  sessionId     Int
+  userId        Int
+  name          String?  // Store name at archive time
+  username      String?  // Store username at archive time
+  cardId        Int
+  cardNumbers   String
+  markedCells   String
+  autoMark      Boolean
+  prize         Float
+  joinedAt      DateTime
+  archivedAt    DateTime @default(now())
+
+  session       BingoSessionArchive @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+// ==============================
+// GAME EARNINGS (Owner revenue per game)
+// ==============================
+model GameEarnings {
+  id            Int       @id @default(autoincrement())
+  game          GameType  @unique
+  totalStakes   Float     @default(0)   // Sum of stakes collected (for analytics)
+  totalPayouts  Float     @default(0)   // Sum of prizes paid out (analytics)
+  totalCommission Float   @default(0)   // 10% commission accumulated (owner earnings)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// Avatar-specific per-user balance (single table for avatar module)
+model AvatarBalance {
+  id             Int      @id @default(autoincrement())
+  userId         Int      @unique
+  currentBalance BigInt   @default(0) // store in smallest currency unit (e.g., cents)
+  updatedAt      DateTime @updatedAt
+}
+
+// ==============================
+// BONUS TABLE
+// ==============================
+model Bonus {
+  id            Int    @id @default(autoincrement())
+  defaultAmount Int    @default(5)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ==============================
+// STAKE-SPECIFIC BONUS TABLE
+// ==============================
+model StakeBonus {
+  id          Int    @id @default(autoincrement())
+  stake       Int    // 10, 20, 50, 100
+  bonusAmount Int    @default(0)
+  enabled     Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([stake])
+}
+
+// PASSWORD RESET OTP TABLE
+// ==============================
+model PasswordResetOtp {
+  id         Int      @id @default(autoincrement())
+  email      String
+  otp        String   @db.VarChar(6)
+  expiresAt  DateTime
+  isUsed     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  }
+
+// ==============================
+// PLAYER HISTORY TABLE
+// ==============================
+model PlayerHistory {
+  id         Int      @id @default(autoincrement())
+  playerId   Int
+  gameType   String
+
+  score      Int    // how much he win from spesfic game
+  playedAt   DateTime @default(now())
+  result     String   // e.g. "win", "lose", "draw"
+  gameId     Int     // ID of the game played
+}
+
+// ==============================
+// USER LEADERBOARD STAT TABLE
+// ==============================
+model UserLeaderboardStat {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  type         LeaderboardType
+  period       LeaderboardPeriod
+  periodStart  DateTime // Start of the period (e.g. day, week, month, or 1970-01-01 for total)
+  value        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, type, period, periodStart])
+  @@index([type, period, periodStart])
+  @@index([userId, type, period, periodStart])
+}
+
+enum LeaderboardType {
+  INVITATION
+  PLAY
+}
+
+enum LeaderboardPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  TOTAL
+}
+// ==============================
+// SPIN WIN GAME TABLE
+// ==============================
+model SpinWinGame {
+  id          Int      @id @default(autoincrement())
+  gameId      String   @unique @default(uuid())
+  status      String   @default("active") // active, completed, cancelled
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  
+  spins       SpinWinSpin[]
+  bets        SpinWinBet[]
+  jackpotWins SpinWinJackpotWin[]
+  
+  @@map("spin_win_games")
+}
+
+// ==============================
+// SPIN WIN SPIN TABLE
+// ==============================
+model SpinWinSpin {
+  id          Int      @id @default(autoincrement())
+  gameId      String
+  userId      Int
+  winningNumber Int
+  winningColor String   // "red", "black", "green"
+  spinResult  Json     // Store complete spin data
+  createdAt   DateTime @default(now())
+  
+  game        SpinWinGame @relation(fields: [gameId], references: [gameId])
+  user        User         @relation(fields: [userId], references: [id])
+  
+  @@map("spin_win_spins")
+}
+
+// ==============================
+// SPIN WIN BET TABLE
+// ==============================
+model SpinWinBet {
+  id          Int      @id @default(autoincrement())
+  gameId      String
+  userId      Int
+  betType     String   // "exact", "red", "black", "even", "odd", "low", "high", "dozen1", "dozen2", "dozen3", "sector", "twins", "mirrors", "finals", "sixline", "low-red", "low-black", "high-red", "high-black", "neighbors"
+  betValue    String   // The value bet on (number, color, sector name, etc.)
+  amount      Float
+  odds        Float    // Payout multiplier
+  status      String   @default("pending") // pending, won, lost
+  winnings    Float?   // Amount won (null if lost)
+  createdAt   DateTime @default(now())
+  
+  game        SpinWinGame @relation(fields: [gameId], references: [gameId])
+  user        User         @relation(fields: [userId], references: [id])
+  
+  @@map("spin_win_bets")
+}
+
+// ==============================
+// SPIN WIN JACKPOT TABLE
+// ==============================
+model SpinWinJackpot {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique // "mega", "royal"
+  type        String   // "progressive", "fixed"
+  amount      Float
+  baseAmount  Float    // Base amount for progressive jackpots
+  requirement String   // Win condition description
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  wins        SpinWinJackpotWin[]
+  
+  @@map("spin_win_jackpots")
+}
+
+// ==============================
+// SPIN WIN JACKPOT WIN TABLE
+// ==============================
+model SpinWinJackpotWin {
+  id          Int      @id @default(autoincrement())
+  jackpotId   Int
+  gameId      String
+  userId      Int
+  amount      Float
+  spinNumber  Int      // The winning number that triggered the jackpot
+  createdAt   DateTime @default(now())
+  
+  jackpot     SpinWinJackpot @relation(fields: [jackpotId], references: [id])
+  game        SpinWinGame   @relation(fields: [gameId], references: [gameId])
+  user        User          @relation(fields: [userId], references: [id])
+  
+  @@map("spin_win_jackpot_wins")
+}

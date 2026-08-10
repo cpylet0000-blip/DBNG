@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="abol app icon">
+  <defs>
+    <linearGradient id="abol192-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="28" fill="url(#abol192-bg)" />
+  <circle cx="96" cy="96" r="58" fill="#22d3ee" opacity="0.92"/>
+  <path d="M96 52a44 44 0 1 1 0 88 44 44 0 1 1 0-88zm0 13a31 31 0 1 0 0 62 31 31 0 1 0 0-62z" fill="#ffffff"/>
+  <text x="96" y="166" font-size="24" font-weight="700" letter-spacing="2" text-anchor="middle" fill="#e2e8f0" font-family="Arial, sans-serif">abol</text>
+</svg>

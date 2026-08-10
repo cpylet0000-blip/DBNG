@@ -1,0 +1,68 @@
+// Lottery Winner Model
+model LotteryWinner {
+  id           Int      @id @default(autoincrement())
+  lotteryId    Int
+  userId       Int
+  ticketNumber Int
+  prizePosition Int     // 1 for first prize, 2 for second, 3 for third
+  prizeAmount  Float
+  prizeName    String
+  createdAt    DateTime @default(now())
+  
+  // Relations
+  lottery      Lottery  @relation(fields: [lotteryId], references: [id])
+  user         User     @relation(fields: [userId], references: [id])
+  
+  @@map("lottery_winners")
+}
+
+// Add this to your existing Lottery model if not already present:
+model Lottery {
+  id           Int      @id @default(autoincrement())
+  drawDate     String
+  stake        Float
+  jackpot      Float
+  firstPrize   Float
+  secondPrize  Float
+  thirdPrize   Float
+  totalTickets Int
+  status       String   @default("active") // "active", "completed", "cancelled"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  tickets      LotteryTicket[]
+  winners      LotteryWinner[]
+  
+  @@map("lotteries")
+}
+
+// Add this to your existing User model if not already present:
+model User {
+  id       Int    @id @default(autoincrement())
+  username String @unique
+  email    String @unique
+  balance  Float  @default(0)
+  
+  // Relations
+  tickets       LotteryTicket[]
+  winners       LotteryWinner[]
+  bingoSessions BingoSessionPlayer[]
+  
+  @@map("users")
+}
+
+// Add this to your existing LotteryTicket model if not already present:
+model LotteryTicket {
+  id         Int      @id @default(autoincrement())
+  lotteryId  Int
+  userId     Int
+  ticketNumber Int
+  purchasedAt DateTime @default(now())
+  
+  // Relations
+  lottery Lottery @relation(fields: [lotteryId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+  
+  @@map("lottery_tickets")
+}

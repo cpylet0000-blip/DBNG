@@ -1,0 +1,19 @@
+@keyframes calledBorder {
+  0% {
+    box-shadow: 0 0 0 0 #fb7185, 0 0 8px 2px #fb7185;
+    border-color: #fb7185;
+  }
+  50% {
+    box-shadow: 0 0 0 4px #fb7185, 0 0 16px 4px #fb7185;
+    border-color: #fbbf24;
+  }
+  100% {
+    box-shadow: 0 0 0 0 #fb7185, 0 0 8px 2px #fb7185;
+    border-color: #fb7185;
+  }
+}
+
+.animate-called-border {
+  animation: calledBorder 1.2s infinite;
+  z-index: 1;
+}
