@@ -2,7 +2,7 @@
 const SPIN_AUDIO_SRC = '/audio/start.mp3'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Trophy, RefreshCw, ArrowLeft, Plus, Minus } from 'lucide-react'
+import { Trophy, RefreshCw, ArrowLeft, Plus, Minus, Banknote } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import BettingBoard from './BettingBoard'
 import PayoutTable from './PayoutTable'
@@ -232,6 +232,7 @@ const SpinWinGame: React.FC = () => {
   const [actionError, setActionError] = useState<string | null>(null)
   const [highlightedWinningNumber, setHighlightedWinningNumber] = useState<number | null>(null)
   const [showWinnersDisplay, setShowWinnersDisplay] = useState(false)
+  const [showBalance, setShowBalance] = useState(false)
   const [lastSpinId, setLastSpinId] = useState<number | null>(null)
   const [recentWinners, setRecentWinners] = useState<Array<{
     username: string
@@ -870,75 +871,68 @@ const SpinWinGame: React.FC = () => {
       {/* Hidden audio element for spinning sound */}
       <audio ref={spinAudioRef} src={SPIN_AUDIO_SRC} preload="auto" style={{ display: 'none' }} />
       <div className="w-full flex-1 flex flex-col pt-16 min-h-0 overflow-y-auto overflow-x-hidden pb-4">
-        <div className="fixed top-0 left-0 right-0 z-50 bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-amber-500/20 shadow-lg shadow-amber-500/5">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <div className="flex items-center justify-between h-16 sm:h-20">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3">
-
-                  {/* <div className="relative">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-linear-to-br from-amber-400 to-yellow-300 flex items-center justify-center">
-                      <span className="text-slate-900 font-bold text-sm sm:text-base">
-                        {(profile?.username || profile?.name || 'P').charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-900"></div>
-                  </div> */}
-                  <div className="flex flex-col">
-                    <span className="text-xs sm:text-sm font-mono font-bold text-amber-400">
-                      {balance?.toFixed(0) || '0'} ETB
-                    </span>
-                    {/* <div className="flex items-center gap-2">
-                      <span className="text-sm sm:text-base font-bold text-white">
-                        {profile?.username || profile?.name || 'Player'}
-                      </span>
-                    </div> */}
-                  </div>
-                </div>
-                <div className="hidden md:block w-px h-8 bg-amber-500/20"></div>
-                <div className="hidden md:flex items-center gap-2">
-                  <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
-                  <span className="text-xs font-mono text-amber-300">
-                    ROUND #{gameId || '000'}
+        <div className="fixed top-0 left-0 right-0 z-50 bg-[#141415] border-b-2 border-slate-800/60 px-2 py-1">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-between h-12 sm:h-14">
+              
+              {/* Left: Balance and Deposit */}
+              <div className="flex-1 flex flex-col items-start leading-tight">
+                <div className="inline-flex flex-col w-[85px]">
+                  <span
+                    className="text-[14px] sm:text-xs font-semibold text-green-600 cursor-pointer whitespace-nowrap"
+                    onClick={() => setShowBalance(!showBalance)}
+                  >
+                    {showBalance ? `${balance?.toFixed(2) || '0.00'}` : '****'} ETB
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/deposit")}
+                    className="flex items-center justify-center gap-1 rounded-md bg-green-700 py-0.5 mt-0.5 text-[10px] sm:text-[11px] text-slate-300 transition hover:bg-green-500 w-full"
+                  >
+                    <Banknote size={13} />
+                    Deposit
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="relative w-10 h-10 sm:w-10 sm:h-10 mr-8">
+
+              {/* Center: Timer */}
+              <div className="flex items-center justify-center shrink-0">
+                <div className="relative w-10 h-10 sm:w-10 sm:h-10">
                   <div className="absolute inset-0 rounded-full border-2 border-amber-400/30 border-t-amber-400 animate-spin-slow"></div>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xs sm:text-sm font-black font-mono text-red-400 animate-pulse">
+                    <span className="text-[11px] sm:text-xs font-black font-mono text-red-400 animate-pulse">
                       {formatCountdown(spinCountdown)}
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <button
-                    onClick={() => setShowHowItWorks(true)}
-                    className="group relative p-2 sm:px-3 sm:py-2 rounded-lg bg-slate-800/80 hover:bg-amber-600 border border-amber-500/30 hover:border-amber-400 transition-all duration-300"
-                  >
-                    <span className="flex items-center justify-center gap-1.5">
-                      <span className=" text-[10px] font-medium text-amber-300 group-hover:text-white">
-                        How works
-                      </span>
-                    </span>
-                  </button>
-
-                  {/* Refresh - With tooltip on hover */}
-                  <button
-                    onClick={initialize}
-                    className="group relative p-2 rounded-lg bg-slate-800/80 hover:bg-amber-600 border border-amber-500/30 hover:border-amber-400 transition-all duration-300"
-                    title="Refresh game"
-                  >
-                    <RefreshCw className="w-3 h-3 sm:w-3 sm:h-3 text-amber-400 group-hover:text-white transition-all duration-300 group-hover:rotate-180" />
-                  </button>
-                </div>
               </div>
-            </div>
 
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-amber-500 to-transparent animate-shimmer"></div>
+              {/* Right: Buttons */}
+              <div className="flex-1 flex items-center justify-end gap-1 sm:gap-2">
+                <button
+                  onClick={() => setShowHowItWorks(true)}
+                  className="group relative px-2 sm:px-3 rounded-lg border border-slate-700/60 hover:bg-slate-800 transition-all duration-300 h-8 sm:h-9 flex items-center justify-center"
+                >
+                  <span className="flex items-center justify-center gap-1.5">
+                    <span className="text-[10px] font-medium text-amber-300 group-hover:text-white whitespace-nowrap">
+                      How works
+                    </span>
+                  </span>
+                </button>
+
+                <button
+                  onClick={initialize}
+                  className="group relative rounded-lg border border-slate-700/60 hover:bg-slate-800 transition-all duration-300 h-8 sm:h-9 aspect-square flex items-center justify-center"
+                  title="Refresh game"
+                >
+                  <RefreshCw className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 group-hover:text-white transition-all duration-300 group-hover:rotate-180" />
+                </button>
+              </div>
+
+            </div>
           </div>
         </div>
+
 
         {actionError && (
           <div className="mb-4 p-3 bg-red-600 text-white rounded-lg">
