@@ -845,43 +845,19 @@ const SpinWinGame: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-slate-900 to-slate-800 text-white flex items-center justify-center">
-        <div className="relative">
+      <div className="fixed inset-0 z-50 bg-[#141415] text-white flex items-center justify-center">
+        <div className="relative flex items-center justify-center w-48 h-48">
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-32 h-32 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin-slow"></div>
+            <div className="w-38 h-38 border-3 border-blue-500/30 border-t-blue-500 rounded-full animate-spin-slow"></div>
           </div>
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-24 h-24 border-4 border-amber-400/20 border-b-amber-400 rounded-full animate-spin-reverse"></div>
+            <div className="w-30 h-30 border-3 border-blue-400/20 border-b-blue-400 rounded-full animate-spin-reverse"></div>
           </div>
           <div className="relative z-10 text-center px-8">
-            <div className="flex gap-1 justify-center mb-4">
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-2 h-2 rounded-full bg-amber-400 animate-pulse-fast`}
-                  style={{ animationDelay: `${i * 0.1}s` }}
-                ></div>
-              ))}
-            </div>
-            <div className="text-4xl font-black mb-2 tracking-wider animate-pulse-fast">
-              <span className="bg-clip-text text-transparent bg-linear-to-r from-amber-400 to-yellow-300">
+            <div className="text-3xl font-black tracking-wider animate-pulse-fast">
+              <span className="bg-clip-text text-transparent bg-linear-to-r from-blue-400 to-blue-300">
                 SPIN WIN
               </span>
-            </div>
-            <div className="flex items-center justify-center gap-2 text-lg text-amber-300/90">
-              <span className="animate-bounce-fast">⚡</span>
-              <span className="font-mono tracking-widest">
-                LOADING
-                <span className="inline-flex overflow-hidden ml-1">
-                  <span className="animate-roll">.</span>
-                  <span className="animate-roll" style={{ animationDelay: '0.2s' }}>.</span>
-                  <span className="animate-roll" style={{ animationDelay: '0.4s' }}>.</span>
-                </span>
-              </span>
-              <span className="animate-bounce-fast" style={{ animationDelay: '0.1s' }}>⚡</span>
-            </div>
-            <div className="relative h-1 w-48 bg-slate-700 rounded-full mt-4 overflow-hidden">
-              <div className="absolute inset-0 bg-linear-to-r from-transparent via-amber-400 to-transparent animate-shimmer-fast"></div>
             </div>
           </div>
         </div>
@@ -890,10 +866,10 @@ const SpinWinGame: React.FC = () => {
   }
 
   return (
-    <div className="pb-56 sm:pb-64">
+    <div className={`fixed inset-0 z-40 bg-[#141415] overflow-y-auto overscroll-none flex flex-col ${showWheel ? 'pb-24 sm:pb-32' : 'pb-56 sm:pb-64'}`}>
       {/* Hidden audio element for spinning sound */}
       <audio ref={spinAudioRef} src={SPIN_AUDIO_SRC} preload="auto" style={{ display: 'none' }} />
-      <div className="w-full">
+      <div className="w-full flex-1 flex flex-col pt-20">
         <div className="fixed top-0 left-0 right-0 z-50 bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-amber-500/20 shadow-lg shadow-amber-500/5">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <div className="flex items-center justify-between h-16 sm:h-20">
@@ -963,8 +939,7 @@ const SpinWinGame: React.FC = () => {
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-amber-500 to-transparent animate-shimmer"></div>
           </div>
         </div>
-        <div className="mt-20">
-        </div>
+
         {actionError && (
           <div className="mb-4 p-3 bg-red-600 text-white rounded-lg">
             {actionError}
@@ -977,10 +952,10 @@ const SpinWinGame: React.FC = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.2fr)_minmax(340px,1fr)] gap-6">
-          <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.2fr)_minmax(340px,1fr)] gap-6 flex-1 px-4 sm:px-6">
+          <div className={`space-y-6 flex flex-col w-full ${showWheel ? 'm-auto' : ''}`}>
             {showWheel && (
-              <div className="bg-slate-800 rounded-xl p-6">
+              <div className="bg-slate-800 rounded-xl p-6 shadow-2xl">
 
                 <div className="relative w-full max-w-[620px] aspect-square mx-auto mb-2 overflow-hidden">
                   <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_30%,#7c3f16,#2b1408_68%)] shadow-2xl border-4 border-[#3a1d0e]"></div>

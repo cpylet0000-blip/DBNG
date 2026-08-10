@@ -12,6 +12,7 @@ import { TiktactoeGame } from "./games/tiktactoe";
 import { AvatarRoom } from "./games/avatar";
 import { KenoGame } from "./games/keno";
 import { NumberPuzzleGame } from "./games/number-puzzle";
+import { SpinWinGame } from "./games/spinWin";
 import { ProfileProvider } from "./profileContext";
 import { StakeBonusProvider } from "./contexts/StakeBonusContext";
 import { DepositMethodsProvider } from "./contexts/DepositMethodsContext";
@@ -43,6 +44,7 @@ const AppShell = () => {
             <Route path="/games/tiktactoe" element={<TiktactoeGame />} />
             <Route path="/games/avatar" element={<AvatarRoom />} />
             <Route path="/games/number-puzzle" element={<NumberPuzzleGame />} />
+            <Route path="/games/spin-win" element={<SpinWinGame />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
