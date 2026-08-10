@@ -70,6 +70,12 @@ export const CardSelector = ({
   const [bingoSessionId, setBingoSessionId] = useState<number | string | null>(
     null,
   );
+  // Track the live session status so we can auto-transition when it becomes active
+  const [sessionStatus, setSessionStatus] = useState<string | null>(null);
+  // Ref holding the PREVIOUS session status — used to detect transition into "active"
+  // so we only auto-redirect when the game JUST starts, not when the user navigates
+  // back to card-select while a game is already running.
+  const prevSessionStatusRef = useRef<string | null>(null);
 
   // Determine if user is using reward balance only
   const userBalance =
@@ -136,6 +142,10 @@ export const CardSelector = ({
           setLocalJoined(activeSession.players?.length || 0);
           setLocalEndsAt(activeSession.countdownEndsAt ?? null);
           setBingoSessionId(activeSession.id ?? null);
+          setSessionStatus((prev) => {
+            prevSessionStatusRef.current = prev;
+            return activeSession.status ?? null;
+          });
           // Find how many cards the current user has in this session
           const myUserId = profile?.id;
           if (myUserId && Array.isArray(activeSession.players)) {
@@ -190,6 +200,10 @@ export const CardSelector = ({
           setLocalJoined(activeSession.players?.length || 0);
           setLocalEndsAt(activeSession.countdownEndsAt ?? null);
           setBingoSessionId(activeSession.id ?? null);
+          setSessionStatus((prev) => {
+            prevSessionStatusRef.current = prev;
+            return activeSession.status ?? null;
+          });
           // Find how many cards the current user has in this session
           const myUserId = profile?.id;
           if (myUserId && Array.isArray(activeSession.players)) {
@@ -272,10 +286,22 @@ export const CardSelector = ({
     else onSelectCard(confirmedCards);
   }, [confirmedCards, isJoiningGame, onGoToGame, onSelectCard]);
 
-  // Auto go to game
+  // Auto go to game:
+  // - countdown === 0 : the timer just expired, go immediately
+  // - sessionStatus just transitioned → "active": safety-net for missed
+  //   WebSocket game_started events. We check prevSessionStatusRef so that if
+  //   the user navigated BACK to card-select while a game was already running
+  //   (prevStatus starts as null → sessionStatus = "active" on first fetch)
+  //   we do NOT auto-redirect; they should see the "game in progress" overlay.
   useEffect(() => {
-    if (confirmedCards.length > 0 && countdown === 0) handleGoToGame();
-  }, [countdown, confirmedCards.length, handleGoToGame]);
+    const sessionJustBecameActive =
+      sessionStatus === "active" &&
+      prevSessionStatusRef.current !== null &&   // had a previous value (not first load)
+      prevSessionStatusRef.current !== "active"; // and it wasn't already active
+    if (confirmedCards.length > 0 && (countdown === 0 || sessionJustBecameActive)) {
+      handleGoToGame();
+    }
+  }, [countdown, sessionStatus, confirmedCards.length, handleGoToGame]);
 
   return (
     <div className=" mt-4">
@@ -287,17 +313,17 @@ export const CardSelector = ({
 
         <SquareBox className="flex flex-row items-center leading-tight">
           <span className="text-slate-400 text-[10px] font-semibold">
-            Stake -&nbsp;
+            Stake &nbsp;
           </span>
-          <span className="text-yellow-400 text-[10px] font-semibold">
+          <span className="text-yellow-400 text-[10px] font-semibold ml-0.5">
             {stake} ETB
           </span>
         </SquareBox>
         <SquareBox className="flex flex-row items-center leading-tight">
           <span className="text-slate-400 text-[10px] font-semibold">
-            Derash -&nbsp;
+            Derash &nbsp;
           </span>
-          <span className="text-yellow-400 text-[10px] font-semibold">
+          <span className="text-yellow-400 text-[10px] font-semibold ml-0.5">
             {winnerPrize} ETB{" "}
             {bonus > 0 && (
               <Star size={12} className="text-yellow-400 animate-spin-slow" />
@@ -308,9 +334,9 @@ export const CardSelector = ({
         {/* Game ID */}
         <SquareBox className="flex flex-row items-center leading-tight">
           <span className="text-slate-400 text-[10px] font-semibold">
-            Game ID -&nbsp;
+            Game ID &nbsp;
           </span>{" "}
-          <span className="text-yellow-400 text-[10px] font-bold">
+          <span className="text-yellow-400 text-[10px] font-bold ml-0.5">
             {bingoSessionId ?? "---"}
           </span>
         </SquareBox>
@@ -318,9 +344,9 @@ export const CardSelector = ({
       <div className="flex justify-center ">
         <div className="flex flex-row items-center leading-tight px-2 py-1.5 max-w-[7rem] bg-slate-900 rounded-sm ">
           <span className="text-slate-400 text-[12px] font-semibold">
-            Status -&nbsp;
+            Status &nbsp;
           </span>
-          <span className="text-yellow-400 text-[10px] font-semibold">
+          <span className="text-yellow-400 text-[10px] font-semibold ml-0.5">
             {hasActiveGame ? (
               <span className="text-red-500 text-[10.5px]">Active</span>
             ) : countdown !== null && countdown > 0 ? (
@@ -354,9 +380,8 @@ export const CardSelector = ({
               return (
                 <div
                   key={cardId}
-                  className={`relative flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${
-                    colors[cardId % colors.length]
-                  } shadow-lg`}
+                  className={`relative flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${colors[cardId % colors.length]
+                    } shadow-lg`}
                 >
                   {/* Shine */}
                   <div className="absolute left-1 top-1 h-2 w-2 rounded-full bg-white/80 blur-[1px]" />
@@ -377,13 +402,12 @@ export const CardSelector = ({
             disabled={
               isJoiningGame || (hasActiveGame && confirmedCards.length === 0)
             }
-            className={`ml-3  rounded-md px-4 py-1.5 text-xs font-semibold transition-all ${
-              isJoiningGame
-                ? "cursor-not-allowed bg-slate-700 text-slate-400"
-                : hasActiveGame
-                  ? "cursor-not-allowed bg-slate-600 text-slate-300"
-                  : "bg-gradient-to-r from-amber-400 to-orange-500 text-black hover:scale-105 hover:shadow-lg hover:shadow-amber-500/30"
-            }`}
+            className={`ml-3  rounded-md px-4 py-1.5 text-xs font-semibold transition-all ${isJoiningGame
+              ? "cursor-not-allowed bg-slate-700 text-slate-400"
+              : hasActiveGame
+                ? "cursor-not-allowed bg-slate-600 text-slate-300"
+                : "bg-gradient-to-r from-amber-400 to-orange-500 text-black hover:scale-105 hover:shadow-lg hover:shadow-amber-500/30"
+              }`}
           >
             {isJoiningGame
               ? "..."
@@ -404,61 +428,60 @@ export const CardSelector = ({
         >
           {localCards.length === 0
             ? Array.from({ length: 200 }).map((_, i) => (
-                <div
-                  key={`skeleton-${i}`}
-                  className="aspect-square rounded-[7.5px] bg-blue-700  text-sm font-bold flex items-center justify-center text-gray-300 transition-all duration-300"
-                >
-                  {i + 1}
-                </div>
-              ))
+              <div
+                key={`skeleton-${i}`}
+                className="aspect-square rounded-[7.5px] bg-blue-700  text-sm font-bold flex items-center justify-center text-gray-300 transition-all duration-300"
+              >
+                {i + 1}
+              </div>
+            ))
             : localCards.map((card) => {
-                const taken = !card.isAvailable;
-                const confirmed = confirmedCards.includes(card.cardId);
-                const limitReached =
-                  confirmedCards.length >= MAX_SELECTION && !confirmed;
-                // Enforce max 1 card for reward balance, even after refresh
-                const rewardLimitReached =
-                  isRewardOnly && sessionCardCount >= 1 && !confirmed;
-                return (
-                  <button
-                    key={card.cardId}
-                    disabled={
-                      taken ||
-                      confirmed ||
-                      hasActiveGame ||
-                      limitReached ||
-                      rewardLimitReached
+              const taken = !card.isAvailable;
+              const confirmed = confirmedCards.includes(card.cardId);
+              const limitReached =
+                confirmedCards.length >= MAX_SELECTION && !confirmed;
+              // Enforce max 1 card for reward balance, even after refresh
+              const rewardLimitReached =
+                isRewardOnly && sessionCardCount >= 1 && !confirmed;
+              return (
+                <button
+                  key={card.cardId}
+                  disabled={
+                    taken ||
+                    confirmed ||
+                    hasActiveGame ||
+                    limitReached ||
+                    rewardLimitReached
+                  }
+                  onClick={() => {
+                    // Already calculated userBalance, rewardBalance, totalAvailable above
+                    if (totalAvailable < stake) {
+                      alert("Insufficient balance");
+                      return;
                     }
-                    onClick={() => {
-                      // Already calculated userBalance, rewardBalance, totalAvailable above
-                      if (totalAvailable < stake) {
-                        alert("Insufficient balance");
-                        return;
-                      }
-                      // If only reward balance is available, allow only one card
-                      // Enforce max 1 card for reward balance, even after refresh
-                      if (isRewardOnly && sessionCardCount >= 1) {
-                        alert(
-                          "You can only select one card with reward balance.",
-                        );
-                        return;
-                      }
-                      setSelectedCard(card);
-                    }}
-                    className={`aspect-square rounded-[7.5px] text-sm font-bold flex items-center justify-center transition-all ${
-                      taken
-                        ? "bg-[#3d3d3d] text-slate-200 "
-                        : confirmed
-                          ? "bg-green-800 text-slate-400 cursor-not-allowed"
-                          : limitReached
-                            ? "bg-blue-700 text-slate-300 cursor-not-allowed"
-                            : "relative overflow-hidden text-gray-200 hover:scale-105  active:translate-y-1  bg-blue-700"
+                    // If only reward balance is available, allow only one card
+                    // Enforce max 1 card for reward balance, even after refresh
+                    if (isRewardOnly && sessionCardCount >= 1) {
+                      alert(
+                        "You can only select one card with reward balance.",
+                      );
+                      return;
+                    }
+                    setSelectedCard(card);
+                  }}
+                  className={`aspect-square rounded-[7.5px] text-sm font-bold flex items-center justify-center transition-all ${taken
+                    ? "bg-[#3d3d3d] text-slate-200 "
+                    : confirmed
+                      ? "bg-green-800 text-slate-400 cursor-not-allowed"
+                      : limitReached
+                        ? "bg-blue-700 text-slate-300 cursor-not-allowed"
+                        : "relative overflow-hidden text-gray-200 hover:scale-105  active:translate-y-1  bg-blue-700"
                     }`}
-                  >
-                    {card.cardId}
-                  </button>
-                );
-              })}
+                >
+                  {card.cardId}
+                </button>
+              );
+            })}
         </div>
 
         {hasActiveGame && confirmedCards.length === 0 && (
@@ -469,70 +492,77 @@ export const CardSelector = ({
               backdropFilter: "blur(2px)",
             }}
           >
-            <span className="inline-flex flex-col items-center px-8 py-5 rounded-2xl bg-gradient-to-br from-[#18181b]/95 via-[#111827]/90 to-[#09090b]/95 border border-amber-400/30 shadow-[0_10px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl animate-in fade-in zoom-in duration-300">
+            <span className="absolute inset-0 flex items-center justify-center px-4">
               {/* Status Header */}
-              <span className="flex items-center gap-2 text-amber-300 font-extrabold text-2xl tracking-wide mb-2">
-                🟡 ጨዋታው በሂደት ላይ ነው
-              </span>
-
-              {/* Divider */}
-              <div className="w-16 h-[2px] rounded-full bg-gradient-to-r from-transparent via-amber-400 to-transparent mb-3" />
-
-              {/* Description */}
-              <span className="text-center text-gray-300 text-[15px] leading-7 font-medium">
-                ይህን ዙር መቀላቀል አይቻልም።
-                <br />
-                <span className="text-gray-400">
-                  ቀጣዩን ዙር ይጠብቁ ወይም ሌላ መደብ ይምረጡ።
+              <div className="flex items-center gap-1 flex-col  justify-center  align-center">
+                <span className="flex items-center gap-2 text-amber-300 font-extrabold text-[16px] leading-snug ">
+                  ጨዋታው በሂደት ላይ ነው
                 </span>
-              </span>
+
+                {/* Description */}
+                <span className="text-center text-gray-300 text-[12px] leading-snug font-medium">
+                  ይህን ዙር መቀላቀል አይቻልም።
+                  <br />
+                  <span className="text-gray-400 text-center">
+                    ቀጣዩን ዙር ይጠብቁ ወይም ሌላ መደብ ይምረጡ።
+                  </span>
+                </span>
+
+                {/* Watch Game Button */}
+                <button
+                  onClick={() => {
+                    if (onGoToGame) onGoToGame();
+                  }}
+                  className="mt-3 px-4 py-1.5 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-bold text-xs shadow-lg transition-all active:scale-95 cursor-pointer flex items-center gap-1"
+                >
+                  Watch Game
+                </button>
+              </div>
             </span>
           </div>
         )}
-      </div>
 
-      {/* Max Selection Warning */}
-      {!hasActiveGame && confirmedCards.length >= MAX_SELECTION && (
-        <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none px-4">
-          {MAX_SELECTION == 1 ? (
-            <div className="max-w-sm w-full rounded-2xl border border-amber-400/25 bg-gradient-to-br from-[#1a1a1a]/95 via-[#202020]/95 to-[#111111]/95 backdrop-blur-xl shadow-[0_15px_45px_rgba(0,0,0,0.5)] px-6 py-5 animate-in fade-in zoom-in duration-300">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-400/15 border border-amber-400/30">
-                  <span className="text-2xl">🎁</span>
-                </div>
-
-                <div>
-                  <h3 className="text-amber-300 font-bold text-base">
+        {/* Max Selection Warning */}
+        {!hasActiveGame && confirmedCards.length >= MAX_SELECTION && (
+          <div
+            className="absolute inset-0 z-20 flex items-center justify-center rounded-lg pointer-events-auto"
+            style={{
+              background: "rgba(0,0,0,0.15)",
+              backdropFilter: "blur(2px)",
+            }}
+          >
+            {MAX_SELECTION == 1 ? (
+              <span className="absolute inset-0 flex items-center justify-center px-4">
+                {/* Status Header */}
+                <div className="flex items-center gap-1 flex-col  justify-center  align-center">
+                  <span className="flex items-center gap-2 text-amber-300 font-extrabold text-[16px] leading-snug ">
                     የቦነስ ምርጫ
-                  </h3>
+                  </span>
 
-                  <p className="mt-1 text-sm text-gray-300 leading-6">
-                    በቦነሱ {MAX_SELECTION} ካርቴላ ብቻ መምረጥ ይችላሉ።
-                  </p>
+                  {/* Description */}
+                  <span className="text-center text-gray-300 text-[12px] leading-snug font-medium">
+                    በቦነስ {MAX_SELECTION} ካርቴላ ብቻ መምረጥ ይችላሉ።
+                  </span>
                 </div>
-              </div>
-            </div>
-          ) : (
-            <div className="max-w-sm w-full rounded-2xl border border-amber-400/25 bg-gradient-to-br from-[#1a1a1a]/95 via-[#202020]/95 to-[#111111]/95 backdrop-blur-xl shadow-[0_15px_45px_rgba(0,0,0,0.5)] px-6 py-5 animate-in fade-in zoom-in duration-300">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-400/15 border border-amber-400/30">
-                  <span className="text-2xl">⚠️</span>
-                </div>
-
-                <div>
-                  <h3 className="text-amber-300 font-bold text-base">
+              </span>
+            ) : (
+              <span className="absolute inset-0 flex items-center justify-center px-4">
+                {/* Status Header */}
+                <div className="flex items-center gap-1 flex-col  justify-center  align-center">
+                  <span className="flex items-center gap-2 text-amber-300 font-extrabold text-[16px] leading-snug ">
                     የምርጫ ገደብ
-                  </h3>
+                  </span>
 
-                  <p className="mt-1 text-sm text-gray-300 leading-6">
+                  {/* Description */}
+                  <span className="text-center text-gray-300 text-[12px] leading-snug font-medium">
                     እስከ {MAX_SELECTION} ካርቴላ ብቻ መምረጥ ይችላሉ።
-                  </p>
+                  </span>
                 </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Confirmation Modal */}
       {selectedCard && (

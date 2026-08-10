@@ -45,6 +45,15 @@ const SIM_BINGO_BIAS_MAX_CALLS = Math.max(
 );
 // demo winner names are provided by runtime demoBotConfig (in-memory)
 
+// Set of Telegram IDs for bot accounts — winners with these IDs always get
+// a fake name from the admin-configured demoWinnerNames list.
+const BOT_ACCOUNT_IDS = new Set(
+  (process.env.BOT_ACCOUNTS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
+);
+
 const BIAS_PATTERNS = [
   [0, 5, 10, 15, 20],
   [1, 6, 11, 16, 21],
@@ -198,13 +207,18 @@ function resolveWinnerName(
   roomNumber,
   winnerUserId,
   fallbackName,
+  winnerTelegramId,
 ) {
   const biasState = getOrCreateBiasState(session, stake, roomNumber);
   const isDemoBiasWinner =
     (biasState && biasState.targetUserId === winnerUserId) ||
     winnerUserId === 27053;
 
-  if (isDemoBiasWinner) {
+  // Bot accounts also use admin-configured fake names
+  const isBotAccount =
+    winnerTelegramId && BOT_ACCOUNT_IDS.has(String(winnerTelegramId));
+
+  if (isDemoBiasWinner || isBotAccount) {
     try {
       const cfg = demoBotConfig.getConfig() || {};
       const names = cfg.demoWinnerNames || [];
@@ -1068,6 +1082,7 @@ async function processMultipleWinners(stake, session, winners, roomNumber) {
       roomNumber,
       player.userId,
       baseWinnerName,
+      player.user?.telegramId, // pass telegramId to detect bot accounts
     );
     resolvedNames.set(player.userId, winnerName);
   }
