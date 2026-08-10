@@ -17,7 +17,7 @@ const BettingBoard: React.FC<BettingBoardProps> = ({ placeBet, currentBet, bets 
     Array.from({ length: 6 }, (_, columnIndex) => rowIndex + 1 + columnIndex * 6)
   ).flat()
   const gameButtonClass =
-    'h-10 rounded bg-emerald-800 hover:bg-emerald-900 text-white font-semibold transition-colors border border-white/80'
+    'h-8 sm:h-9 rounded bg-emerald-800 hover:bg-emerald-900 text-white text-[11px] sm:text-xs font-semibold transition-colors border border-white/80'
 
   const getBetAmount = (type: string, value: string | number) => {
     if (type === 'exact') {
@@ -56,7 +56,7 @@ const BettingBoard: React.FC<BettingBoardProps> = ({ placeBet, currentBet, bets 
 
   return (
     <div className="bg-sky-950 pb-3">
-      <div className="p-2 mb-2 ">
+      <div className="px-1 pt-1 mb-2">
         <div className="mb-1">
           {(() => {
             const zeroAmount = getBetAmount('exact', 0)
@@ -65,7 +65,7 @@ const BettingBoard: React.FC<BettingBoardProps> = ({ placeBet, currentBet, bets 
               <button
                 onClick={() => placeBet('exact', 0, 36)}
                 className={getButtonClass(
-                  'w-full h-10 rounded text-lg font-semibold transition-colors overflow-hidden bg-emerald-600 hover:bg-emerald-700 text-white',
+                  'w-full h-8 sm:h-9 rounded text-sm font-semibold transition-colors overflow-hidden bg-emerald-600 hover:bg-emerald-700 text-white',
                   zeroActive
                 )}
               >
@@ -85,7 +85,7 @@ const BettingBoard: React.FC<BettingBoardProps> = ({ placeBet, currentBet, bets 
                 key={num}
                 onClick={() => placeBet('exact', num, 36)}
                 className={getButtonClass(
-                  `h-10 rounded text-lg font-semibold transition-colors overflow-hidden ${RED_NUMBERS.includes(num)
+                  `h-8 sm:h-9 rounded text-[13px] font-bold transition-colors overflow-hidden ${RED_NUMBERS.includes(num)
                     ? 'bg-red-800 hover:bg-red-800 text-white'
                     : 'bg-black hover:bg-slate-800 text-white'
                   }`,
@@ -99,8 +99,8 @@ const BettingBoard: React.FC<BettingBoardProps> = ({ placeBet, currentBet, bets 
           })}
         </div>
       </div>
-      <div className="text-xs uppercase tracking-wide text-emerald-100 mb-2 px-4  text-center ">Sector</div>
-      <div className="grid grid-cols-6 gap-1 mb-4 px-4">
+      <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-emerald-100 mb-0.5 px-1 text-center ">Sector</div>
+      <div className="grid grid-cols-6 gap-1 mb-2 px-1">
         {sectors.map((sector) => {
           const amount = getBetAmount('sector', sector)
           return (
@@ -115,8 +115,8 @@ const BettingBoard: React.FC<BettingBoardProps> = ({ placeBet, currentBet, bets 
           )
         })}
       </div>
-      <div className="text-xs uppercase tracking-wide text-emerald-100 mb-2 px-4 text-center">DOZENS</div>
-      <div className="grid grid-cols-3 gap-2 mb-2 px-4 ">
+      <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-emerald-100 mb-0.5 px-1 text-center">DOZENS</div>
+      <div className="grid grid-cols-3 gap-1.5 mb-2 px-1 ">
 
         {[
           { type: 'dozen1', value: '1-12', label: '1~12' },
@@ -136,8 +136,8 @@ const BettingBoard: React.FC<BettingBoardProps> = ({ placeBet, currentBet, bets 
           )
         })}
       </div>
-      <div className="text-xs uppercase tracking-wide text-emerald-100 mb-2 px-4 text-center">EVEN/ODD</div>
-      <div className="grid grid-cols-2 gap-2 mb-3 px-4">
+      <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-emerald-100 mb-0.5 px-1 text-center">EVEN/ODD</div>
+      <div className="grid grid-cols-2 gap-1.5 mb-2 px-1">
         {[
           { type: 'even', value: 'EVEN', label: 'EVEN' },
           { type: 'odd', value: 'ODD', label: 'ODD' }
@@ -148,7 +148,7 @@ const BettingBoard: React.FC<BettingBoardProps> = ({ placeBet, currentBet, bets 
               key={item.type}
               onClick={() => placeBet(item.type, item.value, 2)}
               className={getButtonClass(
-                'h-10 rounded border border-white/80 text-emerald-100 font-semibold transition-colors hover:bg-emerald-800/40 overflow-hidden',
+                'h-8 sm:h-9 rounded border border-white/80 text-emerald-100 text-xs font-semibold transition-colors hover:bg-emerald-800/40 overflow-hidden',
                 amount > 0
               )}
             >
@@ -159,12 +159,12 @@ const BettingBoard: React.FC<BettingBoardProps> = ({ placeBet, currentBet, bets 
         })}
       </div>
 
-      <div className="text-xs uppercase tracking-wide text-emerald-100 mb-2 px-4 text-center">COLORS</div>
-      <div className="grid grid-cols-3 gap-2 mb-3 px-4">
+      <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-emerald-100 mb-0.5 px-1 text-center">COLORS</div>
+      <div className="grid grid-cols-3 gap-1.5 mb-2 px-1">
         {[
-          { type: 'red', value: 'RED', label: 'Red', className: 'h-10 rounded bg-red-700 hover:bg-red-800 text-white font-semibold transition-colors overflow-hidden' },
-          { type: 'black', value: 'BLACK', label: 'Black', className: 'h-10 rounded bg-black hover:bg-slate-800 text-white font-semibold transition-colors overflow-hidden' },
-          { type: 'green', value: 'GREEN', label: 'Green', className: 'h-10 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors overflow-hidden' }
+          { type: 'red', value: 'RED', label: 'Red', className: 'h-8 sm:h-9 rounded bg-red-700 hover:bg-red-800 text-white text-xs font-semibold transition-colors overflow-hidden' },
+          { type: 'black', value: 'BLACK', label: 'Black', className: 'h-8 sm:h-9 rounded bg-black hover:bg-slate-800 text-white text-xs font-semibold transition-colors overflow-hidden' },
+          { type: 'green', value: 'GREEN', label: 'Green', className: 'h-8 sm:h-9 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors overflow-hidden' }
         ].map((item) => {
           const amount = getBetAmount(item.type, item.value)
           return (
@@ -179,8 +179,8 @@ const BettingBoard: React.FC<BettingBoardProps> = ({ placeBet, currentBet, bets 
           )
         })}
       </div>
-      <div className="text-xs uppercase tracking-wide text-emerald-100 mb-2 px-4 text-center">LOW/HIGH</div>
-      <div className="grid grid-cols-2 gap-2 mb-3 px-4">
+      <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-emerald-100 mb-0.5 px-1 text-center">LOW/HIGH</div>
+      <div className="grid grid-cols-2 gap-1.5 mb-2 px-1">
         {[
           { type: 'low', value: '1-18', label: '1-18' },
           { type: 'high', value: '19-36', label: '19-36' }
@@ -199,13 +199,13 @@ const BettingBoard: React.FC<BettingBoardProps> = ({ placeBet, currentBet, bets 
         })}
       </div>
 
-      <div className="text-xs uppercase tracking-wide text-emerald-100 mb-2 px-4 text-center">Extra Bet</div>
-      <div className="grid grid-cols-4 gap-2 mb-3 px-4 max-w-4xl mx-auto ">
+      <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-emerald-100 mb-0.5 px-1 text-center">Extra Bet</div>
+      <div className="grid grid-cols-4 gap-1.5 mb-2 px-1 max-w-4xl mx-auto ">
         {[
-          { type: 'low-red', value: '1-18 (Red)', label: '1-18', className: 'h-10 rounded bg-red-700 hover:bg-red-800 text-white text-sm font-semibold transition-colors overflow-hidden' },
-          { type: 'high-red', value: '19-36 (Red)', label: '19-36', className: 'h-10 rounded bg-red-700 hover:bg-red-800 text-white text-sm font-semibold transition-colors overflow-hidden' },
-          { type: 'low-black', value: '1-18 (Black)', label: '1-18', className: 'h-10 rounded bg-black hover:bg-slate-800 text-white text-sm font-semibold transition-colors overflow-hidden' },
-          { type: 'high-black', value: '19-36 (Black)', label: '19-36', className: 'h-10 rounded bg-black hover:bg-slate-800 text-white text-sm font-semibold transition-colors overflow-hidden' }
+          { type: 'low-red', value: '1-18 (Red)', label: '1-18', className: 'h-8 sm:h-9 rounded bg-red-700 hover:bg-red-800 text-white text-[10px] font-semibold transition-colors overflow-hidden' },
+          { type: 'high-red', value: '19-36 (Red)', label: '19-36', className: 'h-8 sm:h-9 rounded bg-red-700 hover:bg-red-800 text-white text-[10px] font-semibold transition-colors overflow-hidden' },
+          { type: 'low-black', value: '1-18 (Black)', label: '1-18', className: 'h-8 sm:h-9 rounded bg-black hover:bg-slate-800 text-white text-[10px] font-semibold transition-colors overflow-hidden' },
+          { type: 'high-black', value: '19-36 (Black)', label: '19-36', className: 'h-8 sm:h-9 rounded bg-black hover:bg-slate-800 text-white text-[10px] font-semibold transition-colors overflow-hidden' }
         ].map((item) => {
           const amount = getBetAmount(item.type, item.value)
           return (

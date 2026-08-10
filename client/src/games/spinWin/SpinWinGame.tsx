@@ -253,7 +253,7 @@ const SpinWinGame: React.FC = () => {
     const nextIndex = Math.max(0, currentIndex - 1)
     const newChipValue = chipValues[nextIndex]
     setSelectedChip(newChipValue)
-    
+
     // Update all pending bets to use the new stake amount
     setPendingSelections(prev => prev.map(bet => ({
       ...bet,
@@ -266,7 +266,7 @@ const SpinWinGame: React.FC = () => {
     const nextIndex = Math.min(chipValues.length - 1, currentIndex + 1)
     const newChipValue = chipValues[nextIndex]
     setSelectedChip(newChipValue)
-    
+
     // Update all pending bets to use the new stake amount
     setPendingSelections(prev => prev.map(bet => ({
       ...bet,
@@ -488,7 +488,7 @@ const SpinWinGame: React.FC = () => {
 
       // Play audio exactly when spinning starts
       playSpinAudio()
-      
+
       setRotation(newRotation)
 
       // Show the result immediately after the spin animation
@@ -866,33 +866,33 @@ const SpinWinGame: React.FC = () => {
   }
 
   return (
-    <div className={`fixed inset-0 z-40 bg-[#141415] overflow-y-auto overscroll-none flex flex-col ${showWheel ? 'pb-24 sm:pb-32' : 'pb-56 sm:pb-64'}`}>
+    <div className={`fixed inset-0 z-40 overflow-hidden overscroll-none flex flex-col bg-[#141415] pb-16`}>
       {/* Hidden audio element for spinning sound */}
       <audio ref={spinAudioRef} src={SPIN_AUDIO_SRC} preload="auto" style={{ display: 'none' }} />
-      <div className="w-full flex-1 flex flex-col pt-20">
+      <div className="w-full flex-1 flex flex-col pt-16 min-h-0 overflow-y-auto overflow-x-hidden pb-4">
         <div className="fixed top-0 left-0 right-0 z-50 bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-amber-500/20 shadow-lg shadow-amber-500/5">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <div className="flex items-center justify-between h-16 sm:h-20">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-3">
 
-                  <div className="relative">
+                  {/* <div className="relative">
                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-linear-to-br from-amber-400 to-yellow-300 flex items-center justify-center">
                       <span className="text-slate-900 font-bold text-sm sm:text-base">
                         {(profile?.username || profile?.name || 'P').charAt(0).toUpperCase()}
                       </span>
                     </div>
                     <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-900"></div>
-                  </div>
+                  </div> */}
                   <div className="flex flex-col">
                     <span className="text-xs sm:text-sm font-mono font-bold text-amber-400">
                       {balance?.toFixed(0) || '0'} ETB
-                    </span>            <div className="flex items-center gap-2">
+                    </span>
+                    {/* <div className="flex items-center gap-2">
                       <span className="text-sm sm:text-base font-bold text-white">
                         {profile?.username || profile?.name || 'Player'}
                       </span>
-
-                    </div>
+                    </div> */}
                   </div>
                 </div>
                 <div className="hidden md:block w-px h-8 bg-amber-500/20"></div>
@@ -918,7 +918,7 @@ const SpinWinGame: React.FC = () => {
                     className="group relative p-2 sm:px-3 sm:py-2 rounded-lg bg-slate-800/80 hover:bg-amber-600 border border-amber-500/30 hover:border-amber-400 transition-all duration-300"
                   >
                     <span className="flex items-center justify-center gap-1.5">
-                      <span className=" text-xs font-medium text-amber-300 group-hover:text-white">
+                      <span className=" text-[10px] font-medium text-amber-300 group-hover:text-white">
                         How works
                       </span>
                     </span>
@@ -930,7 +930,7 @@ const SpinWinGame: React.FC = () => {
                     className="group relative p-2 rounded-lg bg-slate-800/80 hover:bg-amber-600 border border-amber-500/30 hover:border-amber-400 transition-all duration-300"
                     title="Refresh game"
                   >
-                    <RefreshCw className="w-5 h-5 sm:w-5 sm:h-5 text-amber-400 group-hover:text-white transition-all duration-300 group-hover:rotate-180" />
+                    <RefreshCw className="w-3 h-3 sm:w-3 sm:h-3 text-amber-400 group-hover:text-white transition-all duration-300 group-hover:rotate-180" />
                   </button>
                 </div>
               </div>
@@ -952,7 +952,7 @@ const SpinWinGame: React.FC = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.2fr)_minmax(340px,1fr)] gap-6 flex-1 px-4 sm:px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.2fr)_minmax(340px,1fr)] gap-6 flex-1 px-1 sm:px-4">
           <div className={`space-y-6 flex flex-col w-full ${showWheel ? 'm-auto' : ''}`}>
             {showWheel && (
               <div className="bg-slate-800 rounded-xl p-6 shadow-2xl">
@@ -971,7 +971,7 @@ const SpinWinGame: React.FC = () => {
                   <motion.div
                     className="absolute inset-3 rounded-full drop-shadow-lg"
                     animate={{ rotate: rotation }}
-                    transition={{ 
+                    transition={{
                       duration: isSpinning ? SPIN_ANIMATION_DURATION_S : 0,
                       // Strong ease-out tail: wheel visibly slows near the ending slot.
                       ease: SPIN_EASE
@@ -1142,7 +1142,7 @@ const SpinWinGame: React.FC = () => {
         </div>
 
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-black">
-          <div className="relative w-full mb-10 border-t-2 border-white bg-gray-950 text-white shadow-2xl">
+          <div className="relative w-full border-t-2 border-emerald-900 bg-gray-950 text-white shadow-2xl">
             <div className="h-16 px-2 sm:px-3 flex items-center justify-between gap-2">
               <div className="h-12 px-1 rounded-md bg-sky-950/40 flex items-center border">
                 <div className="text-left leading-tight">
@@ -1154,7 +1154,7 @@ const SpinWinGame: React.FC = () => {
                 <button
                   onClick={acceptPendingBets}
                   disabled={isSpinning || pendingSelections.length === 0}
-                  className={ 
+                  className={
                     `h-11 sm:h-13 px-6 rounded-md bg-emerald-600 hover:bg-emerald-600 disabled:cursor-not-allowed text-white flex items-center justify-center gap-2 transition-all duration-300 ` +
                     ((pendingSelections.length > 0 && !isSpinning) ? ' animate-pulse ring-2 ring-amber-400 ring-offset-2' : '')
                   }

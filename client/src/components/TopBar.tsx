@@ -9,7 +9,7 @@ const TopBar = () => {
   const { profile, userLabel, avatarUrl, status } = useProfile();
 
   return (
-    <div className="topbar-gradient flex items-center justify-between border-b-2 border-slate-800/60 px-2 py-1">
+    <div className=" flex items-center justify-between border-b-2 border-slate-800/60 px-2 py-1">
 
       {/* Left */}
       <div className="flex items-center gap-2 min-w-0">
