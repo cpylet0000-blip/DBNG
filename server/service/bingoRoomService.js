@@ -1,4 +1,4 @@
-﻿/**
+/**
  * New Bingo Room Service
  * Manages 4 fixed rooms (one per stake), 200 cards per room, game lifecycle
  */
@@ -201,6 +201,30 @@ function drawBiasedBall(session, stake, roomNumber, calledNumbers) {
   return randomItem(remaining);
 }
 
+export function getDisplayWinnerName(userId, fallbackName, telegramId) {
+  const isDemoBiasWinner =
+    userId === 27053 ||
+    (telegramId && SIM_BINGO_BIAS_USERS.includes(String(telegramId)));
+
+  const isBotAccount =
+    telegramId && BOT_ACCOUNT_IDS.has(String(telegramId));
+
+  if (isDemoBiasWinner || isBotAccount) {
+    try {
+      const cfg = demoBotConfig.getConfig() || {};
+      const names = cfg.demoWinnerNames || [];
+      if (Array.isArray(names) && names.length > 0) {
+        // Deterministic name selection based on userId so the name doesn't flicker/change
+        return names[userId % names.length];
+      }
+    } catch (e) {
+      // ignore and fall back
+    }
+  }
+
+  return fallbackName;
+}
+
 function resolveWinnerName(
   session,
   stake,
@@ -209,26 +233,7 @@ function resolveWinnerName(
   fallbackName,
   winnerTelegramId,
 ) {
-  const biasState = getOrCreateBiasState(session, stake, roomNumber);
-  const isDemoBiasWinner =
-    (biasState && biasState.targetUserId === winnerUserId) ||
-    winnerUserId === 27053;
-
-  // Bot accounts also use admin-configured fake names
-  const isBotAccount =
-    winnerTelegramId && BOT_ACCOUNT_IDS.has(String(winnerTelegramId));
-
-  if (isDemoBiasWinner || isBotAccount) {
-    try {
-      const cfg = demoBotConfig.getConfig() || {};
-      const names = cfg.demoWinnerNames || [];
-      if (Array.isArray(names) && names.length) return randomItem(names);
-    } catch (e) {
-      // ignore and fall back
-    }
-  }
-
-  return fallbackName;
+  return getDisplayWinnerName(winnerUserId, fallbackName, winnerTelegramId);
 }
 
 // Normalize card numbers - ensure they are in row-major format
@@ -1383,7 +1388,11 @@ function formatSession(session) {
     countdownEndsAt: session.countdownEndsAt?.getTime() || null,
     players: session.players.map((p) => ({
       userId: p.userId,
-      name: p.user.name || p.user.username || `User ${p.userId}`,
+      name: getDisplayWinnerName(
+        p.userId,
+        p.user?.name || p.user?.username || `User ${p.userId}`,
+        p.user?.telegramId
+      ),
       cardId: p.cardId,
       cardNumbers: normalizeCardNumbers(JSON.parse(p.cardNumbers)),
       markedCells: JSON.parse(p.markedCells),
