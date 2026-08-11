@@ -225,12 +225,12 @@ app.get("/api/profile", async (req, res) => {
       },
     });
 
-    // Ensure a UserBalance record exists with a default currentBalance of 5
+    // Ensure a UserBalance record exists with a default currentBalance of 15
     if (!user.balance) {
       await prisma.userBalance.create({
         data: {
           userId: user.id,
-          currentBalance: 10,
+          currentBalance: 15,
         },
       });
     }

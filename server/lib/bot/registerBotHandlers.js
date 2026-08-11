@@ -73,21 +73,20 @@ export const registerBotHandlers = (bot) => {
     // Only show Register button if user is not registered
     if (!isRegistered) {
       keyboard.push([
-        { text: "🎱 START PLAYING!", callback_data: "request_contact" },
+        { text: "🎯 START PLAYING 🚀", callback_data: "request_contact" },
       ]);
     } else {
       // Only show Play Now if user is registered
-      keyboard.push([{ text: "▶️ Play Now", web_app: { url: appUrl } }]);
+      keyboard.push([{ text: "🎮 PLAY NOW 🚀", web_app: { url: appUrl } }]);
     }
 
     keyboard.push([
-      { text: "💬 Get support", url: supportUrl },
-      { text: "👥 Join group", url: groupUrl },
+      { text: "🎧 Support", url: supportUrl },
+      { text: "📢 Join Group", url: groupUrl },
     ]);
 
     keyboard.push([
-      { text: "📤 Invite Friend", callback_data: "invite_friend" },
-      { text: "🏆 Leaderboard", callback_data: "leaderboards" }, // there is deactivate the leader board now.
+      { text: "🎁 Invite Friends", callback_data: "invite_friend" },
     ]);
 
     return { inline_keyboard: keyboard };
@@ -188,12 +187,14 @@ export const registerBotHandlers = (bot) => {
     }
 
     // Send welcome image with caption
-    const imagePath = path.join(__dirname, "../../public/welcome.png"); 
-    const welcomeCaption = `
-<b>🎉 እንኳን በደህና መጡ, ${firstName}!</b>
-ቢንጎ እየተዝናኑ ታላላቅ ሽልማቶችን ያግኙ።መልካም እድል!
+    const imagePath = path.join(__dirname, "../../public/welcome.png");
+    const welcomeCaption = `<b>✨ እንኳን ወደ ግዮን በደህና መጡ${firstName ? `, ${firstName}` : ""}! ✨</b>
 
-`;
+🎲 <b>በቢንጎ ይጫዎቱ፣ ስፒን ያድርጉ፣ ዕድልዎን ይሞክሩ!</b>
+💰 <b>ታላላቅ የገንዘብ ሽልማቶች ይጠብቁዎታል!</b>
+
+🎯 <b>ዕድልዎን ይሞክሩ ዛሬውኑ ያሸንፉ!</b>
+🍀 <b>መልካም ዕድል! 🚀</b>`;
     try {
       // Get appropriate keyboard based on registration status
       const keyboard = await getWelcomeKeyboard(telegramId, appUrl);
@@ -214,8 +215,9 @@ export const registerBotHandlers = (bot) => {
     } catch (err) {
       // Fallback to text message if image fails
       const keyboard = await getWelcomeKeyboard(telegramId, appUrl);
-      bot.sendMessage(chatId, `እንኳን በደህና መጡ ${firstName}!`, {
+      bot.sendMessage(chatId, welcomeCaption, {
         reply_markup: keyboard,
+        parse_mode: "HTML",
       });
     }
   });
@@ -237,14 +239,14 @@ export const registerBotHandlers = (bot) => {
       });
       bot.sendMessage(
         chatId,
-        "🚀 **FINAL STEP!**\n\n📱 እባክዎ ከታች ያለውን ቁልፍ ተጭነው ስልክዎን ያጋሩና ጨዋታውን በስጦታ ይጀምሩ! 📱",
+        "✨ **የመጨረሻው ደረጃ!** ✨\n\n📱 *እባክዎ ከታች ያለውን ቁልፍ ተጭነው ስልክ ቁጥርዎን ያጋሩ፤ የነፃ ቦነስ ስጦታዎን በመቀበል ጨዋታውን አሁኑኑ ይጀምሩ!* 🎁",
         {
           parse_mode: "Markdown",
           reply_markup: {
             keyboard: [
               [
                 {
-                  text: "📱 ስልክዎን ያጋሩና የ10 ብር ቦነስ አሁኑኑ ያግኙ! 🎁",
+                  text: "📱 ስልክ ቁጥርዎን ያጋሩና ቦነስዎን ያግኙ! 🎁",
                   request_contact: true,
                 },
               ],
@@ -440,7 +442,13 @@ export const registerBotHandlers = (bot) => {
       const keyboard = await getWelcomeKeyboard(telegramId, appUrl);
 
       // Send new welcome message with updated buttons
-      const welcomeMessage = `✅ ምዝገባዎ ተጠናቋል! እንኳን ወደ Gion ቢንጎ በሰላም መጡ፤ አሁን ሁሉንም ጨዋታዎች መጫወት ይችላሉ! 🎮`;
+      const welcomeMessage = `🎉 <b>ምዝገባዎ በተሳካ ሁኔታ ተጠናቋል! ✅</b>
+
+<b>እንኳን በደህና መጡ! 🎲</b>
+🔥 <b>አሁን BINGO | SPIN  በመጫወት ዕድልዎን መሞከር ይችላሉ!</b>
+
+💰 <b>ታላላቅ ሽልማቶች ይጠብቁዎታል!</b>
+🍀 <b>መልካም ዕድል እና መልካም ጨዋታ! 🚀</b>`;
 
       // Try to send welcome image again with updated keyboard
       const imagePath = path.join(__dirname, "../../public/welcome.png");
@@ -449,11 +457,13 @@ export const registerBotHandlers = (bot) => {
         await bot.sendPhoto(chatId, fs.createReadStream(imagePath), {
           caption: welcomeMessage,
           reply_markup: keyboard,
+          parse_mode: "HTML",
         });
       } else {
         // Fallback to text message
         await bot.sendMessage(chatId, welcomeMessage, {
           reply_markup: keyboard,
+          parse_mode: "HTML",
         });
       }
     } catch (error) {
@@ -462,11 +472,12 @@ export const registerBotHandlers = (bot) => {
       // Fallback: just send confirmation message
       bot.sendMessage(
         chatId,
-        `✅ ምዝገባዎ በታማኝነት ተጠናቋል! እንኳን ወደ አቦል ቢንጎ በሰላም መጡ፤ አሁን ሁሉንም ጨዋታዎች መጫወት ይችላሉ! 🎮`,
+        welcomeMessage,
         {
+          parse_mode: "HTML",
           reply_markup: {
             inline_keyboard: [
-              [{ text: "▶️ Play Now", web_app: { url: appUrl } }],
+              [{ text: "🎮 PLAY NOW", web_app: { url: appUrl } }],
             ],
           },
         },
