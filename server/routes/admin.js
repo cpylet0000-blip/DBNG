@@ -967,25 +967,57 @@ router.delete("/users/:id", adminAuthMiddleware, async (req, res) => {
       return res.status(404).json({ success: false, error: "User not found" });
     }
 
-    // Delete user and all related data in a transaction
-    await prisma.$transaction(async (tx) => {
-      // Delete user balance
-      await tx.userBalance.deleteMany({ where: { userId: id } });
+    // Delete user and all related data in a transaction to satisfy foreign key constraints
+    await prisma.$transaction(
+      async (tx) => {
+        // 1. User Balance & Avatar Balance
+        await tx.userBalance.deleteMany({ where: { userId: id } });
+        await tx.avatarBalance.deleteMany({ where: { userId: id } });
 
-      // Delete user from game sessions and related data
-      await tx.bingoSessionPlayer.deleteMany({ where: { userId: id } });
+        // 2. Game / Bingo Sessions
+        await tx.bingoSessionPlayer.deleteMany({ where: { userId: id } });
+        await tx.playerSession.deleteMany({ where: { userId: id } });
+        await tx.move.deleteMany({ where: { userId: id } });
+        await tx.gameHistory.updateMany({
+          where: { winnerId: id },
+          data: { winnerId: null },
+        });
 
-      // Delete any other user-related records here
-      // Add more deletions as needed for other tables
+        // 3. Financial / Transactions / Requests
+        await tx.depositRequest.deleteMany({ where: { userId: id } });
+        await tx.withdrawRequest.deleteMany({ where: { userId: id } });
+        await tx.transaction.deleteMany({ where: { userId: id } });
+        await tx.transferHistory.deleteMany({
+          where: { OR: [{ senderId: id }, { receiverId: id }] },
+        });
 
-      // Finally delete the user
-      await tx.user.delete({ where: { id } });
-    });
+        // 4. Rewards & Leaderboard Stats
+        await tx.reward.deleteMany({ where: { userId: id } });
+        await tx.userLeaderboardStat.deleteMany({ where: { userId: id } });
+        await tx.playerHistory.deleteMany({ where: { playerId: id } });
+
+        // 5. Lottery
+        await tx.lotteryTicket.deleteMany({ where: { userId: id } });
+        await tx.lotteryWinner.deleteMany({ where: { userId: id } });
+
+        // 6. Spin Win Game
+        await tx.spinWinSpin.deleteMany({ where: { userId: id } });
+        await tx.spinWinBet.deleteMany({ where: { userId: id } });
+        await tx.spinWinJackpotWin.deleteMany({ where: { userId: id } });
+
+        // Finally delete the user
+        await tx.user.delete({ where: { id } });
+      },
+      {
+        maxWait: 10000,
+        timeout: 30000,
+      }
+    );
 
     res.json({ success: true, message: "User deleted permanently" });
   } catch (err) {
     console.error("Failed to delete user", err);
-    res.status(500).json({ success: false, error: "Failed to delete user" });
+    res.status(500).json({ success: false, error: "Failed to delete user: " + (err.message || err) });
   }
 });
 

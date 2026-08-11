@@ -39,7 +39,8 @@ interface UserWithBalance {
 type DerivedStatus = 'active' | 'blocked' | 'pending';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? '';
-const ADMIN_BALANCE_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_BALANCE_PASSWORD;
+const ADMIN_BALANCE_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_BALANCE_PASSWORD || 'pass_word';
+const ADMIN_DELETE_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_DELETE_PASSWORD || process.env.NEXT_PUBLIC_ADMIN_BALANCE_PASSWORD || '1992';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<UserWithBalance[]>([]);
@@ -344,8 +345,11 @@ export default function UsersPage() {
   };
 
   const handleDeleteUser = async (userId: number, userName: string) => {
-    const confirmed = window.prompt("Enter passs word");
-    if (confirmed !=="1992") return;
+    const password = window.prompt("Enter admin password to delete user:");
+    if (!password || password !== ADMIN_DELETE_PASSWORD) {
+      alert("Incorrect password. User deletion cancelled.");
+      return;
+    }
 
     const doubleConfirmed = window.confirm(`🚨 FINAL WARNING: This will permanently delete all user data including balance, game history, and rewards. Are you absolutely sure?`);
     if (!doubleConfirmed) return;
