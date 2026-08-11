@@ -99,9 +99,15 @@ class SpinWinAPI {
       this.socket.disconnect()
     }
 
-    const wsBaseUrl = import.meta.env.VITE_WS_URL 
-      ? import.meta.env.VITE_WS_URL.replace('/ws', '') 
-      : import.meta.env.VITE_API_BASE || 'http://localhost:5000'
+    const rawWs = import.meta.env.VITE_WS_URL || ''
+    const rawApi = import.meta.env.VITE_API_BASE || import.meta.env.VITE_API_URL || ''
+    
+    let wsBaseUrl = 'http://localhost:5000'
+    if (rawWs) {
+      wsBaseUrl = rawWs.replace(/\/api\/ws\/?$/, '').replace(/\/ws\/?$/, '').replace(/\/api\/?$/, '')
+    } else if (rawApi) {
+      wsBaseUrl = rawApi.replace(/\/api\/?$/, '')
+    }
 
     const authPayload: AuthPayload = {
       token: this.token,

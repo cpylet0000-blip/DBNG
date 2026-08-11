@@ -18,6 +18,7 @@ type RoundSummary = {
   totalWagered: number
   totalPaid: number
   profit: number
+  gameId?: string
 }
 
 type RoundBet = {
@@ -182,7 +183,10 @@ export default function SpinWinAdminPage() {
       setError(null)
       try {
         const res = await axios.get(`${BACKEND_URL}/admin/spin-win/round-details`, {
-          params: { roundAt: selectedRound.roundAt },
+          params: {
+            roundAt: selectedRound.roundAt,
+            ...(selectedRound.gameId ? { gameId: selectedRound.gameId } : {}),
+          },
           withCredentials: true,
         })
         setRoundBets(Array.isArray(res.data?.bets) ? res.data.bets : [])

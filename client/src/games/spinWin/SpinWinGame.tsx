@@ -967,7 +967,7 @@ const SpinWinGame: React.FC = () => {
 
                   <motion.div
                     className="absolute inset-3 rounded-full drop-shadow-lg"
-                    initial={{ rotate: startRotation }}
+                    initial={false}
                     animate={{ rotate: rotation }}
                     transition={{
                       type: "tween",
@@ -1060,7 +1060,7 @@ const SpinWinGame: React.FC = () => {
                         ? 'bg-gradient-to-br from-yellow-400 to-amber-600 scale-110'
                         : 'bg-gradient-to-br from-amber-700 to-yellow-500'
                         }`}>
-                        {isSpinning ? (
+                        {isSpinning || (isSpinPhase && highlightedWinningNumber === null) ? (
                           <span className="text-2xl sm:text-3xl font-extrabold leading-none text-white animate-pulse">?</span>
                         ) : lastResult ? (
                           <>

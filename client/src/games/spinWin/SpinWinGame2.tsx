@@ -1087,8 +1087,8 @@ const SpinWinGame: React.FC = () => {
                                                 ? 'bg-gradient-to-br from-yellow-400 to-amber-600 scale-110'
                                                 : 'bg-gradient-to-br from-amber-700 to-yellow-500'
                                                 }`}>
-                                                {isSpinning ? (
-                                                    <span className="text-2xl sm:text-3xl font-extrabold leading-none text-white animate-pulse">?</span>
+                                                {isSpinning || (isSpinPhase && highlightedWinningNumber === null) ? (
+                                                  <span className="text-2xl sm:text-3xl font-extrabold leading-none text-white animate-pulse">?</span>
                                                 ) : lastResult ? (
                                                     <>
                                                         <span className={`text-xl sm:text-2xl font-extrabold leading-none text-white ${highlightedWinningNumber !== null ? 'animate-bounce' : ''
