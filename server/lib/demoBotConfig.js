@@ -11,11 +11,8 @@ const DEFAULT = {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean),
-  // enabled by default unless explicitly set to "false" in env
-  enabled:
-    process.env.BOT_ENABLED === undefined
-      ? true
-      : process.env.BOT_ENABLED === "true",
+  // disabled by default unless explicitly set to "true" in env
+  enabled: process.env.BOT_ENABLED === "true",
 };
 
 let config = { ...DEFAULT };

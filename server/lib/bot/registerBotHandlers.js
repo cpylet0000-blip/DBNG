@@ -190,7 +190,7 @@ export const registerBotHandlers = (bot) => {
     const imagePath = path.join(__dirname, "../../public/welcome.png");
     const welcomeCaption = `<b>✨ እንኳን ወደ ግዮን በደህና መጡ${firstName ? `, ${firstName}` : ""}! ✨</b>
 
-🎲 <b>በቢንጎ ይጫዎቱ፣ ስፒን ያድርጉ፣ ዕድልዎን ይሞክሩ!</b>
+🎲 <b>ቢንጎ ይጫዎቱ፣ ስፒን ያድርጉ፣ ዕድልዎን ይሞክሩ!</b>
 💰 <b>ታላላቅ የገንዘብ ሽልማቶች ይጠብቁዎታል!</b>
 
 🎯 <b>ዕድልዎን ይሞክሩ ዛሬውኑ ያሸንፉ!</b>
