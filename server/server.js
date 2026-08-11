@@ -36,6 +36,7 @@ import depositMethodRoutes from "./routes/depositMethod.js";
 import adminUserAnalyticsRoutes from "./routes/adminUserAnalytics.js";
 import adminFinancialAnalyticsRoutes from "./routes/adminFinancialAnalytics.js";
 import adminStakeBonusesRoutes from "./routes/adminStakeBonuses.js";
+import adminSpinWinRoutes from "./routes/adminSpinWin.js";
 import flagsFeatureRoutes from "./routes/flagsFeature.js";
 import passwordResetRoutes from "./routes/passwordReset.js";
 import bingoArchiveRoutes from "./routes/bingoArchive.js";
@@ -338,6 +339,8 @@ app.use("/api/bingo-archive", bingoArchiveRoutes);
 app.use("/api/lottery", lotteryRoutes);
 // Mount keno routes
 app.use("/api/keno", kenoRoutes);
+// Admin SpinWin analytics routes
+app.use("/api/admin/spin-win", adminSpinWinRoutes);
 // Admin routes (owner earnings summary)
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/lottery-draw", adminLotteryDrawRoutes);
