@@ -49,20 +49,17 @@ class SpinWinSocket {
 
       // Join game room
       socket.on('join-game', (gameId) => {
-        if (!socket.userId) {
-          socket.emit('error', { message: 'Not authenticated' });
-          return;
-        }
-
         socket.join(gameId);
         
         if (!this.gameRooms.has(gameId)) {
           this.gameRooms.set(gameId, new Set());
         }
-        this.gameRooms.get(gameId).add(socket.userId);
+        if (socket.userId) {
+          this.gameRooms.get(gameId).add(socket.userId);
+        }
 
         socket.emit('joined-game', { gameId });
-        spinWinSocketLog(`User ${socket.userId} joined game ${gameId}`);
+        spinWinSocketLog(`Socket ${socket.id} (user ${socket.userId || 'guest'}) joined game ${gameId}`);
       });
 
       // Leave game room
@@ -195,15 +192,17 @@ class SpinWinSocket {
   }
 
   // Broadcast spin result to game room
+  // Broadcast spin result to all users
   broadcastSpinResult(gameId, spinResult) {
-    this.io.to(gameId).emit('spin-result', {
+    const payload = {
       gameId,
       winningNumber: spinResult.winningNumber,
       winningColor: spinResult.winningColor,
       totalWinnings: spinResult.totalWinnings,
-      winners: spinResult.winners, // ← MISSING WINNERS FIELD!
+      winners: spinResult.winners || [],
       timestamp: new Date().toISOString()
-    });
+    };
+    this.io.emit('spin-result', payload);
   }
 
   broadcastRoundTimer(payload) {
@@ -224,7 +223,7 @@ class SpinWinSocket {
 
   broadcastRoundSpinning(payload) {
     if (!payload?.gameId) return;
-    this.io.to(payload.gameId).emit('round-spinning', {
+    this.io.emit('round-spinning', {
       ...payload,
       timestamp: new Date().toISOString()
     });
