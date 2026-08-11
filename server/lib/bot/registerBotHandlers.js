@@ -150,17 +150,17 @@ export const registerBotHandlers = (bot) => {
             );
 
             // Notify referrer about successful invitation
-            try {
-              await bot.sendMessage(
-                referrerId,
-                `🎉 Congratulations! Someone joined through your invite link!\n\nTotal invitations: ${(referrer.totalInvitation || 0) + 1}`,
-              );
-            } catch (notifyError) {
-              console.log(
-                "Could not notify referrer (user may have blocked the bot):",
-                notifyError.message,
-              );
-            }
+            // try {
+            //   await bot.sendMessage(
+            //     referrerId,
+            //     `🎉 Congratulations! Someone joined through your invite link!\n\nTotal invitations: ${(referrer.totalInvitation || 0) + 1}`,
+            //   );
+            // } catch (notifyError) {
+            //   console.log(
+            //     "Could not notify referrer (user may have blocked the bot):",
+            //     notifyError.message,
+            //   );
+            // }
           } else {
             console.log(
               `[Bot] Invalid referrer ${referrerId} or same user, skipping referral`,
@@ -258,7 +258,7 @@ export const registerBotHandlers = (bot) => {
       );
     } else if (query.data === "invite_friend") {
       bot.answerCallbackQuery(query.id, {
-        text: "Generating your invite link...",
+        text: "መጋበዣ ሊንክ እየተዘጋጀ ነው...",
       });
 
       const telegramId = String(userId);
@@ -270,31 +270,33 @@ export const registerBotHandlers = (bot) => {
 
       // Create invite link with referrer ID
       const inviteLink = `https://t.me/${botUsername}?start=ref_${telegramId}`;
+      const shareText = "ከእኔ ጋር ግዮን BINGO | SPIN ይጫወቱና አሁኑኑ ያሸንፉ! 🎮💰";
 
       // Build keyboard based on registration status
       const inviteKeyboard = [];
 
       if (isRegistered) {
         inviteKeyboard.push([
-          { text: "🎮 Play Now", web_app: { url: appUrl } },
+          { text: "🎮 PLAY NOW 🚀", web_app: { url: appUrl } },
           {
-            text: "📤 Share",
-            url: `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent("Join me playing this amazing game and earn money! 🎮💰")}`,
+            text: "📤 ለጓደኛ ያጋሩ",
+            url: `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(shareText)}`,
           },
         ]);
       } else {
         inviteKeyboard.push([
           {
-            text: "📤 Share",
-            url: `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent("Join me playing this amazing game and earn money! 🎮💰")}`,
+            text: "📤 ለጓደኛ ያጋሩ",
+            url: `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(shareText)}`,
           },
         ]);
       }
 
       bot.sendMessage(
         chatId,
-        `📤 Share this link with your friends:\n\n${inviteLink}\n\nWhen they join through your link, you'll get credit for the invitation!`,
+        `<b>🎁 የመጋበዣ ሊንክዎን ለጓደኞችዎ ያጋሩ!</b>\n\n🔗 <b>የእርስዎ ሊንክ:</b>\n${inviteLink}\n\n<i>ይህንን ሊንክ ለጓደኞችዎ በመላክ ግዮን ቢንጎን አብረው ይጫወቱ!</i> 🎲✨`,
         {
+          parse_mode: "HTML",
           reply_markup: {
             inline_keyboard: inviteKeyboard,
           },
@@ -354,11 +356,12 @@ export const registerBotHandlers = (bot) => {
       const botUsername = process.env.BOT_USERNAME;
       const inviteLink = `https://t.me/${botUsername}?start=ref_${referrerId}`;
 
-      bot.answerCallbackQuery(query.id, { text: "Copy the link!" });
+      bot.answerCallbackQuery(query.id, { text: "ሊንኩን ኮፒ ያድርጉ!" });
 
       bot.sendMessage(
         chatId,
-        `📋 Copy the link 👇!\n\n${inviteLink}\n\nShare this with your friends to earn invitation credits!`,
+        `📋 <b>ሊንኩን ኮፒ ያድርጉ 👇</b>\n\n${inviteLink}\n\n<i>ለጓደኞችዎ በመላክ ግዮን ቢንጎን አብረው ይጫወቱ!</i> 🎮✨`,
+        { parse_mode: "HTML" }
       );
     } else if (query.data === "play_now") {
       if (userId) {
