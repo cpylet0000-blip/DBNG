@@ -1,17 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MessageCircle, Users } from "lucide-react";
 
 const Shamo = () => {
   const [activeSlide, setActiveSlide] = useState(0);
-
-  const telegramGroup = import.meta.env.VITE_TELEGRAM_GROUP_USERNAME || "";
-  const telegramSupport = import.meta.env.VITE_SUPPORT_URL || "";
-  const groupUrl = telegramGroup
-    ? `https://t.me/${telegramGroup}`
-    : "https://t.me/";
-  const supportUrl = telegramSupport
-    ? `https://t.me/${telegramSupport}`
-    : "https://t.me/";
 
   const slides = useMemo(
     () => [
@@ -28,14 +19,36 @@ const Shamo = () => {
     [],
   );
 
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setActiveSlide((current) => (current + 1) % slides.length);
+    }, 10000);
+
+    return () => window.clearInterval(interval);
+  }, [slides.length]);
+
+  const telegramGroup = import.meta.env.VITE_TELEGRAM_GROUP_USERNAME || "";
+  const telegramSupport = import.meta.env.VITE_SUPPORT_URL || "";
+  const groupUrl = telegramGroup
+    ? `https://t.me/${telegramGroup}`
+    : "https://t.me/";
+  const supportUrl = telegramSupport
+    ? `https://t.me/${telegramSupport}`
+    : "https://t.me/";
+
   return (
-    <div className="w-full flex flex-col  justify-center mt-10 ">
+    <div className="w-full flex flex-col  justify-center mt-5 ">
       <div className="">
         <div className="">
-          <div className="">
+          <div className="relative overflow-hidden rounded-lg border border-blue-400/20">
             <img
+              key={activeSlide}
               src={slides[activeSlide].image}
-              className="h-[30vh] w-full object-cover rounded-md border border-blue-400/20"
+              className="h-[45vh] w-full object-cover transition-opacity duration-1000 ease-in-out opacity-0"
+              onLoad={(event) => {
+                const img = event.currentTarget;
+                img.style.opacity = "1";
+              }}
             />
           </div>
 
