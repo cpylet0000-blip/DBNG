@@ -2,8 +2,8 @@ import prisma from "../prisma.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { updateLeaderboardStat } from '../../service/leaderboardService.js';
-import { claimRewardCombo } from '../../service/rewardService.js';
+import { updateLeaderboardStat } from "../../service/leaderboardService.js";
+import { claimRewardCombo } from "../../service/rewardService.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -144,7 +144,7 @@ export const registerBotHandlers = (bot) => {
               },
             });
             // Update leaderboard stat for invitation
-            await updateLeaderboardStat(referrer.id, 'INVITATION');
+            await updateLeaderboardStat(referrer.id, "INVITATION");
 
             console.log(
               `[Bot] User ${telegramId} was referred by ${referrerId}`,
@@ -362,7 +362,7 @@ export const registerBotHandlers = (bot) => {
       bot.sendMessage(
         chatId,
         `📋 <b>ሊንኩን ኮፒ ያድርጉ 👇</b>\n\n${inviteLink}\n\n<i>ለጓደኞችዎ በመላክ ግዮን ቢንጎን አብረው ይጫወቱ!</i> 🎮✨`,
-        { parse_mode: "HTML" }
+        { parse_mode: "HTML" },
       );
     } else if (query.data === "play_now") {
       if (userId) {
@@ -474,18 +474,14 @@ export const registerBotHandlers = (bot) => {
       console.error("Error handling post-registration flow:", error);
 
       // Fallback: just send confirmation message
-      bot.sendMessage(
-        chatId,
-        welcomeMessage,
-        {
-          parse_mode: "HTML",
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: "🎮 PLAY NOW", web_app: { url: appUrl } }],
-            ],
-          },
+      bot.sendMessage(chatId, welcomeMessage, {
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "🎮 PLAY NOW", web_app: { url: appUrl } }],
+          ],
         },
-      );
+      });
     }
   });
 
@@ -544,35 +540,90 @@ export const registerBotHandlers = (bot) => {
     }
 
     // Handle combo code claims in group messages.
-    if (msg.text && msg.chat && msg.chat.type && msg.chat.type.endsWith("group")) {
+    if (
+      msg.text &&
+      msg.chat &&
+      msg.chat.type &&
+      msg.chat.type.endsWith("group")
+    ) {
       const trimmedText = msg.text.trim();
-      const shamoPrefix = trimmedText.match(/^shamo\s+(.+)/i);
-      const shamoCode = shamoPrefix?.[1]?.trim();
+      const claimMatch = trimmedText.match(/^(?:shamo|claim)\s+(.+)/i);
+      const shamoCode = claimMatch?.[1]?.trim();
 
       if (shamoCode) {
         const telegramId = userId ? String(userId) : null;
         if (!telegramId) {
-          bot.sendMessage(chatId, "Could not determine your Telegram ID.");
+          bot.sendMessage(
+            chatId,
+            "⚠️ የቴሌግራም መታወቂያዎን ማረጋገጥ አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
+          );
           return;
         }
 
         try {
+          const existingUser = await prisma.user.findUnique({
+            where: { telegramId },
+            select: { userNumber: true },
+          });
+
+          if (!existingUser || !existingUser.userNumber) {
+            const botUsername = process.env.BOT_USERNAME || "your_bot_username";
+
+            await bot.sendMessage(
+              chatId,
+              `🔔 *የShamo ኮድ ማስገቢያ*
+
+⚠️ ኮዱን ለመጠቀም መጀመሪያ ምዝገባዎን ማጠናቀቅ ያስፈልጋል።
+
+🎮 *ደረጃ 1* — @${botUsername} ጋር የግል ቻት ይክፈቱ
+📱 *ደረጃ 2* — "START PLAYING" ይጫኑ
+📞 *ደረጃ 3* — ስልክ ቁጥርዎን ያስመዝግቡ
+🎁 *ደረጃ 4* — የShamo ኮድዎን እዚህ እንደገና ይላኩ
+
+✨ ምዝገባዎን ካጠናቀቁ በኋላ ኮዱን በዚህ ግሩፕ ይላኩ።`,
+              { parse_mode: "Markdown" },
+            );
+
+            return;
+          }
+
           const result = await claimRewardCombo(telegramId, shamoCode, {
             username: msg.from?.username || null,
-            name: [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(' ') || null,
+            name:
+              [msg.from?.first_name, msg.from?.last_name]
+                .filter(Boolean)
+                .join(" ") || null,
           });
 
           if (result.success) {
             await bot.sendMessage(
               chatId,
-              `🎉 Congratulations! You claimed ${result.claimedAmount} ETB reward for Shamo combo code: ${shamoCode}`,
+              `<b>🥳 እንኳን ደስ አለዎት!</b>
+
+🎁 <code>${shamoCode}</code> ኮድ ተጠቅመው
+<b>${result.claimedAmount} ETB</b> አሸንፈዋል!
+
+💰 ሽልማቱ ወደ ሂሳብዎ ገብቷል።
+🎮 ጨዋታዎን ይቀጥሉ!`,
+              { parse_mode: "HTML" },
             );
           } else {
-            await bot.sendMessage(chatId, `⚠️ ${result.error}`);
+            await bot.sendMessage(
+              chatId,
+              `<b>😕 ይቅርታ! ኮዱ አልተቀበለም።</b>
+
+⚠️ ${result.error}
+
+🔎 እባክዎ ኮዱን ያረጋግጡና እንደገና ይሞክሩ።`,
+              { parse_mode: "HTML" },
+            );
           }
         } catch (error) {
-          console.error('Group claim failed', error);
-          await bot.sendMessage(chatId, '❌ Failed to claim the Shamo combo reward. Please try again later.');
+          console.error("Group claim failed", error);
+          await bot.sendMessage(
+            chatId,
+            "😕 ይቅርታ! የShamo ኮዱን ማስገባት አልተቻለም።\n\n🔄 እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።",
+          );
         }
       }
     }
@@ -610,9 +661,7 @@ export const registerBotHandlers = (bot) => {
               },
               {
                 text: "💬 Support",
-                url:
-                  process.env.VITE_TG_SUPPORT_BOT_URL ||
-                  "https://t.me/",
+                url: process.env.VITE_TG_SUPPORT_BOT_URL || "https://t.me/",
               },
             ]);
           } else {
@@ -620,9 +669,7 @@ export const registerBotHandlers = (bot) => {
               { text: "🎱 START WINNING! ", callback_data: "request_contact" },
               {
                 text: "💬 Support",
-                url:
-                  process.env.VITE_TG_SUPPORT_BOT_URL ||
-                  "https://t.me/",
+                url: process.env.VITE_TG_SUPPORT_BOT_URL || "https://t.me/",
               },
             ]);
           }

@@ -76,8 +76,14 @@ export const claimRewardCombo = async (
     return { success: false, error: "You already claimed this reward rule." };
   }
 
-  if (rule.totalPlayerForReward > 0 && rule.claimedCount >= rule.totalPlayerForReward) {
-    return { success: false, error: "Reward limit has been reached. No more claims available." };
+  if (
+    rule.totalPlayerForReward > 0 &&
+    rule.claimedCount >= rule.totalPlayerForReward
+  ) {
+    return {
+      success: false,
+      error: "Reward limit has been reached. No more claims available.",
+    };
   }
 
   if ((user.numberOfTotalPlay ?? 0) < rule.numberOfGamePlay) {
