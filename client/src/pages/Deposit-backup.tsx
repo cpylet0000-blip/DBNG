@@ -426,21 +426,9 @@ const Deposit = () => {
               {sortedDepositMethods.map((m, i) => {
                 const key = m.name.toLowerCase();
                 let img = "/abyssinia.jpg";
-                if (key.includes("tele")) img = "/Telebirr.png";
-                else if (
-                  key.includes("cbe birr") ||
-                  key.includes("cbe-birr") ||
-                  key.includes("cbe birr")
-                )
-                  img = "/CBEbirr.png";
-                else if (
-                  key.includes("m-pesa") ||
-                  key.includes("mpesa") ||
-                  key.includes("m pesa")
-                )
-                  img = "/m-pesa.png";
-                else if (key.includes("ebirr") || key.includes("e-birr"))
-                  img = "/Ebirr.png";
+                if (key.includes("tele")) img = "/telebirr.jpg";
+                else if (key.includes("cbe birr")) img = "/cbe-birr.jpg";
+                else if (key.includes("cbe")) img = "/cbe.jpg";
                 const isSelected =
                   selectedMethod && selectedMethod.name === m.name;
                 return (
@@ -490,6 +478,9 @@ const Deposit = () => {
                     {/* <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-xl pointer-events-none" /> */}
 
                     {/* NAME */}
+                    <div className="absolute bottom-1 text-[11px] left-1 right-1 text-[10px] text-white font-semibold  px-1 py-0.5 rounded text-center backdrop-blur-sm">
+                      {m.name}
+                    </div>
 
                     {/* STATUS DOT */}
                     <div

@@ -40,27 +40,27 @@ async function seedDepositMethods() {
 
   const depositMethods = [
     {
-      name: "CBE",
-      accountInfo: "1000123456789",
-      accountOwner: "Game Platform Account",
-      isActive: true,
-    },
-    {
-      name: "BOA",
-      accountInfo: "2000987654321",
-      accountOwner: "Game Platform Account",
-      isActive: true,
-    },
-    {
       name: "Telebirr",
       accountInfo: "0911234567",
       accountOwner: "Game Platform Telebirr",
       isActive: true,
     },
     {
-      name: "Awash Bank",
-      accountInfo: "3000555666777",
-      accountOwner: "Game Platform Account",
+      name: "CBE Birr",
+      accountInfo: "1000123456789",
+      accountOwner: "Game Platform CBE",
+      isActive: true,
+    },
+    {
+      name: "M-Pesa",
+      accountInfo: "+254712345678",
+      accountOwner: "Game Platform M-Pesa",
+      isActive: true,
+    },
+    {
+      name: "Ebirr",
+      accountInfo: "0919876543",
+      accountOwner: "Game Platform Ebirr",
       isActive: true,
     },
   ];
@@ -95,6 +95,8 @@ async function seedWithdrawLock() {
 async function seedRewardRules() {
   console.log("🎁 Seeding Reward Rules...");
 
+  // Delete dependent rewards first to avoid foreign key constraint errors
+  await prisma.reward.deleteMany({});
   await prisma.rewardRule.deleteMany({});
 
   const rewardRules = [
