@@ -1,5 +1,6 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
+import { claimRewardCombo } from '../service/rewardService.js';
 const router = express.Router();
 const MIN_BALANCE_AFTER_TRANSFER = 50;
 
@@ -38,96 +39,23 @@ router.post('/claim-rewards', async (req, res) => {
     if (!req.tgUser)
         return res.status(401).json({ error: 'Invalid or missing Telegram init data' });
 
-    const { id } = req.tgUser;
-    const telegramId = String(id);
+    const telegramId = String(req.tgUser.id);
+    const providedComboCode = typeof req.body?.comboCode === 'string' ? req.body.comboCode.trim() : '';
 
     try {
-        const providedComboCode = typeof req.body?.comboCode === 'string' ? req.body.comboCode.trim() : '';
-
-        const user = await prisma.user.findUnique({
-            where: { telegramId },
-            include: { balance: true }
+        const result = await claimRewardCombo(telegramId, providedComboCode, {
+            username: req.tgUser.username || null,
+            name: [req.tgUser.first_name, req.tgUser.last_name].filter(Boolean).join(' ') || null,
         });
 
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
+        if (!result.success) {
+            return res.status(400).json({ error: result.error });
         }
-
-        // Fetch the active RewardRule (assuming only one active rule)
-        const rule = await prisma.rewardRule.findFirst({
-            where: { status: 'active' },
-            orderBy: { id: 'desc' },
-        });
-
-        if (!rule) {
-            return res.status(400).json({ error: 'No active challenge rule found' });
-        }
-
-        // Enforce combo check when rule has a combo code configured.
-        if (rule.comboCode && providedComboCode !== rule.comboCode) {
-            return res.status(400).json({ error: 'Invalid combo code.' });
-        }
-
-        // Prevent repeated claim of the same rule by the same user.
-        const existingClaim = await prisma.reward.findFirst({
-            where: {
-                userId: user.id,
-                ruleId: rule.id,
-                status: 'claimed',
-            },
-            select: { id: true },
-        });
-
-        if (existingClaim) {
-            return res.status(400).json({ error: 'You already claimed this reward rule.' });
-        }
-
-        // Check if reward rule has reached its player limit
-        if (rule.totalPlayerForReward > 0 && rule.claimedCount >= rule.totalPlayerForReward) {
-            return res.status(400).json({ error: 'Reward limit has been reached. No more claims available.' });
-        }
-
-        // Check if user satisfies the challenge rule
-        if ((user.numberOfTotalPlay ?? 0) < rule.numberOfGamePlay) {
-            return res.status(400).json({ error: `You need to play at least ${rule.numberOfGamePlay} games to claim the challenge reward.` });
-        }
-
-        // rewardChallenge is a play-progress counter, so compare to games-to-play target.
-        if ((user.rewardChallenge ?? 0) < rule.numberOfGamePlay) {
-            return res.status(400).json({ error: `You need at least ${rule.numberOfGamePlay} challenge plays to claim.` });
-        }
-
-        // Apply claim atomically: credit user, mark claim, and update rule counters.
-        const [, updated] = await prisma.$transaction([
-            prisma.reward.create({
-                data: {
-                    userId: user.id,
-                    ruleId: rule.id,
-                    numberOfgamePlayed: user.numberOfTotalPlay ?? 0,
-                    status: 'claimed',
-                },
-            }),
-            prisma.user.update({
-                where: { id: user.id },
-                data: {
-                    rewardBalance: { increment: rule.rewardAmount },
-                    rewardChallenge: 0,
-                },
-            }),
-            prisma.rewardRule.update({
-                where: { id: rule.id },
-                data: {
-                    claimedCount: { increment: 1 },
-                    // If limit reached, deactivate the rule
-                    status: rule.totalPlayerForReward > 0 && (rule.claimedCount + 1) >= rule.totalPlayerForReward ? 'inactive' : rule.status,
-                },
-            }),
-        ]);
 
         return res.json({
             success: true,
-            claimedChallenge: rule.rewardAmount,
-            newRewardBalance: updated.rewardBalance
+            claimedAmount: result.claimedAmount,
+            newRewardBalance: result.newRewardBalance,
         });
     } catch (err) {
         console.error('Failed to claim rewards', err);

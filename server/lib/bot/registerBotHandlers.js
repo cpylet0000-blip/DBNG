@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { updateLeaderboardStat } from '../../service/leaderboardService.js';
+import { claimRewardCombo } from '../../service/rewardService.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -516,7 +517,7 @@ export const registerBotHandlers = (bot) => {
     const userId = msg.from?.id;
     const chatId = msg.chat.id;
 
-    // Check if this is a abolbroadcast command with photo
+    // Handle admin broadcast with photo
     if (msg.photo && msg.caption && msg.caption.startsWith("/abolbroadcast")) {
       // Check if user is admin
       if (!userId || !isAdmin(userId)) {
@@ -539,6 +540,41 @@ export const registerBotHandlers = (bot) => {
       }
 
       await performBroadcast(msg, broadcastMessage, userId, chatId);
+      return;
+    }
+
+    // Handle combo code claims in group messages.
+    if (msg.text && msg.chat && msg.chat.type && msg.chat.type.endsWith("group")) {
+      const trimmedText = msg.text.trim();
+      const shamoPrefix = trimmedText.match(/^shamo\s+(.+)/i);
+      const shamoCode = shamoPrefix?.[1]?.trim();
+
+      if (shamoCode) {
+        const telegramId = userId ? String(userId) : null;
+        if (!telegramId) {
+          bot.sendMessage(chatId, "Could not determine your Telegram ID.");
+          return;
+        }
+
+        try {
+          const result = await claimRewardCombo(telegramId, shamoCode, {
+            username: msg.from?.username || null,
+            name: [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(' ') || null,
+          });
+
+          if (result.success) {
+            await bot.sendMessage(
+              chatId,
+              `🎉 Congratulations! You claimed ${result.claimedAmount} ETB reward for Shamo combo code: ${shamoCode}`,
+            );
+          } else {
+            await bot.sendMessage(chatId, `⚠️ ${result.error}`);
+          }
+        } catch (error) {
+          console.error('Group claim failed', error);
+          await bot.sendMessage(chatId, '❌ Failed to claim the Shamo combo reward. Please try again later.');
+        }
+      }
     }
   });
 

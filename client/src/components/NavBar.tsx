@@ -33,9 +33,9 @@ const NavBar = () => {
           <span className="text-[10px] font-medium">Deposit</span>
         </Link>
 
-        <Link to="/leaderboard" className={itemClass("/leaderboard")}>
+        <Link to="/shamo" className={itemClass("/shamo")}>
           <Trophy size={18} strokeWidth={2.2} />
-          <span className="text-[10px] font-medium">Ranking</span>
+          <span className="text-[10px] font-medium">Shamo</span>
         </Link>
 
         <Link to="/withdraw" className={itemClass("/withdraw")}>
