@@ -29,13 +29,13 @@ const Shamo = () => {
   );
 
   return (
-    <div className="w-full flex flex-col justify-center items-center align-middle">
+    <div className="w-full flex flex-col  justify-center mt-10 ">
       <div className="">
         <div className="">
           <div className="">
             <img
               src={slides[activeSlide].image}
-              className="h-[30vh] w-full object-cover"
+              className="h-[30vh] w-full object-cover rounded-md border border-blue-400/20"
             />
           </div>
 
@@ -77,16 +77,18 @@ const Shamo = () => {
             </a>
           </div>
 
-          <div className="mt-4">
-            <div className="mb-2 text-base font-medium text-white/95">
-               የTelegram Group ልዩ ጥቅሞች
+          <div className="mt-6">
+            <div className="mb-2 text-base font-semibold text-white/95 text-center">
+              ✨ የቴሌግራም ግሩፓችንን በመቀላቀል የሚገኙ ጥቅሞች
             </div>
-
-            <ul className="space-y-1 pl-4 text-slate-300 text-sm">
-              <li>🎁 የሽልማት ኮዶችን ያግኙ</li>
-              <li>🔥 አዳዲስ ሽልማቶችን በቅድሚያ ይወቁ</li>
-              <li>🎮 ምንም የጨዋታ እድል አያምልጥዎ</li>
-            </ul>
+            <div className="flex items-center justify-center">
+              <ul className="space-y-1 pl-4 text-slate-300 text-sm">
+                <li>🎁 የዕለታዊ የሻሞ ኮድ ቅድሚያ ማግኘት</li>
+                <li>🔥 ስለ አዳዲስ ሽልማቶች ፈጣን መረጃ</li>
+                <li>⚡ ለጥያቄዎችዎ ፈጣን ምላሽ እና ድጋፍ</li>
+                <li>🎮 የማሸነፍ እድልዎን በየቀኑ ያሳድጉ</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>

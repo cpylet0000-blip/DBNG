@@ -5,6 +5,7 @@ import {
   Trophy,
   Upload,
   Download,
+  Gift
 } from "lucide-react";
 
 const NavBar = () => {
@@ -34,7 +35,7 @@ const NavBar = () => {
         </Link>
 
         <Link to="/shamo" className={itemClass("/shamo")}>
-          <Trophy size={18} strokeWidth={2.2} />
+          <Gift size={18} strokeWidth={2.2} />
           <span className="text-[10px] font-medium">Shamo</span>
         </Link>
 
