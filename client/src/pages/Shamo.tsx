@@ -1,161 +1,97 @@
-
-import { useEffect, useState } from "react";
-import { useProfile } from "../profileContext";
-
-type MessageKind = "success" | "error" | "";
+import { useMemo, useState } from "react";
+import { MessageCircle, Users } from "lucide-react";
 
 const Shamo = () => {
-  const [comboCode, setComboCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [messageKind, setMessageKind] = useState<MessageKind>("");
-  const [rewardAmount, setRewardAmount] = useState<number | null>(null);
-  const [showCelebration, setShowCelebration] = useState(false);
+  const [activeSlide, setActiveSlide] = useState(0);
 
-  const { buildHeaders, refresh } = useProfile();
+  const telegramGroup = import.meta.env.VITE_TELEGRAM_GROUP_USERNAME || "";
+  const telegramSupport = import.meta.env.VITE_SUPPORT_URL || "";
+  const groupUrl = telegramGroup
+    ? `https://t.me/${telegramGroup}`
+    : "https://t.me/";
+  const supportUrl = telegramSupport
+    ? `https://t.me/${telegramSupport}`
+    : "https://t.me/";
 
-  const API_BASE =
-    import.meta.env.VITE_API_BASE?.toString().replace(/\/$/, "") || "";
-
-  useEffect(() => {
-    if (!showCelebration) return;
-    const timer = window.setTimeout(() => setShowCelebration(false), 5000);
-    return () => window.clearTimeout(timer);
-  }, [showCelebration]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    setLoading(true);
-    setMessage("");
-    setMessageKind("");
-    setRewardAmount(null);
-    setShowCelebration(false);
-
-    try {
-      const res = await fetch(`${API_BASE}/api/profile/claim-rewards`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...buildHeaders(),
-        },
-        body: JSON.stringify({ comboCode: comboCode.trim() }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        const amount = Number(data.claimedChallenge ?? data.claimedAmount ?? 0);
-
-        setRewardAmount(amount);
-        setMessage(amount > 0 ? `You won ${amount} ETB` : "Reward claimed");
-        setMessageKind("success");
-        setShowCelebration(true);
-        setComboCode("");
-
-        await refresh();
-      } else {
-        setMessage(data.error || "Failed to claim reward");
-        setMessageKind("error");
-      }
-    } catch {
-      setMessage("Failed to claim reward");
-      setMessageKind("error");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const slides = useMemo(
+    () => [
+      {
+        image: "/advertisement/ad1.jpg",
+      },
+      {
+        image: "/advertisement/ad2.jpg",
+      },
+      {
+        image: "/advertisement/ad3.jpg",
+      },
+    ],
+    [],
+  );
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-2 py-3 space-y-3 h-[78vh] overflow-y-auto bg-black text-white">
+    <div className="w-full flex flex-col justify-center items-center align-middle">
+      <div className="">
+        <div className="">
+          <div className="">
+            <img
+              src={slides[activeSlide].image}
+              className="h-[30vh] w-full object-cover"
+            />
+          </div>
 
-      {/* HEADER */}
+          <div className="mt-2 flex items-center justify-center gap-2">
+            {slides.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveSlide(index)}
+                className={`h-2.5 w-2.5 rounded-full transition ${
+                  index === activeSlide ? "bg-blue-400" : "bg-slate-600"
+                }`}
+                aria-label={`Slide ${index + 1}`}
+              />
+            ))}
+          </div>
 
-      <div className="text-center space-y-1 mb-3">
-        <h1 className="text-xl font-bold text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]">
-          Shamo Combo
-        </h1>
+          <div className="mt-4 flex  gap-3 sm:flex-row">
+            <a
+              href={groupUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 rounded-xl border border-blue-400/80 bg-[#111111] px-3 py-2.5 text-center text-sm font-semibold text-slate-100 transition hover:border-blue-400 hover:text-blue-300"
+            >
+              <div className="flex items-center justify-center gap-2 text-[13px] text-blue-400">
+                <Users size={13} />
+                Telegram Group
+              </div>
+            </a>
+            <a
+              href={supportUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 rounded-xl border border-blue-400/80 bg-[#111111] px-3 py-2.5 text-center text-sm font-semibold text-slate-100 transition hover:border-blue-400 hover:text-blue-300"
+            >
+              <div className="flex items-center justify-center gap-2 text-[13px]">
+                <MessageCircle size={13} />
+                Telegram Support
+              </div>
+            </a>
+          </div>
 
-        <p className="text-xs text-slate-400">
-          Enter your reward code
-        </p>
+          <div className="mt-4">
+            <div className="mb-2 text-base font-medium text-white/95">
+               የTelegram Group ልዩ ጥቅሞች
+            </div>
+
+            <ul className="space-y-1 pl-4 text-slate-300 text-sm">
+              <li>🎁 የሽልማት ኮዶችን ያግኙ</li>
+              <li>🔥 አዳዲስ ሽልማቶችን በቅድሚያ ይወቁ</li>
+              <li>🎮 ምንም የጨዋታ እድል አያምልጥዎ</li>
+            </ul>
+          </div>
+        </div>
       </div>
-
-      {/* CARD */}
-
-      <div className="bg-[#0f0f0f] border border-slate-900 rounded-md p-4 space-y-4">
-
-        {/* INPUT */}
-
-        <div className="space-y-2">
-          <label className="text-xs text-slate-400">
-            Enter Code
-          </label>
-
-          <input
-            type="text"
-            value={comboCode}
-            onChange={(e) => setComboCode(e.target.value)}
-            placeholder="Enter your combo code here"
-            disabled={loading}
-            required
-            className="w-full bg-black border border-slate-800 rounded-md px-3 py-2 text-white text-sm outline-none focus:border-yellow-400"
-          />
-        </div>
-
-        {/* BUTTON */}
-
-        <button
-          type="submit"
-          onClick={handleSubmit}
-          disabled={loading}
-          className={`w-full py-2 rounded-md font-semibold ${
-            loading
-              ? "bg-slate-800 text-slate-500"
-              : "bg-yellow-400 text-black hover:scale-[1.02]"
-          }`}
-        >
-          {loading ? "Processing..." : "Claim Reward"}
-        </button>
-
-      </div>
-
-      {/* CELEBRATION */}
-
-      {showCelebration && messageKind === "success" && (
-        <div className="border border-yellow-400/40 bg-yellow-500/10 rounded-md p-4 text-center">
-
-          <div className="text-sm text-yellow-300">
-            🎉 Reward Unlocked
-          </div>
-
-          <div className="text-2xl font-bold text-yellow-400 mt-1">
-            +{rewardAmount ?? 0} ETB
-          </div>
-
-          <div className="text-xs text-slate-400 mt-1">
-            Added to your balance
-          </div>
-
-        </div>
-      )}
-
-      {/* MESSAGE */}
-
-      {message && !showCelebration && (
-        <div
-          className={`rounded-md border px-3 py-2 text-xs ${
-            messageKind === "success"
-              ? "border-green-500/30 text-green-400"
-              : "border-red-500/30 text-red-400"
-          }`}
-        >
-          {message}
-        </div>
-      )}
     </div>
   );
 };
 
 export default Shamo;
-
