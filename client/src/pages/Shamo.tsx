@@ -7,14 +7,17 @@ const Shamo = () => {
   const slides = useMemo(
     () => [
       {
-        image: "/advertisement/ad1.jpg",
+        image: "/advertisement/ad1.png",
       },
       {
-        image: "/advertisement/ad2.jpg",
+        image: "/advertisement/ad2.png",
       },
       {
-        image: "/advertisement/ad3.jpg",
+        image: "/advertisement/ad3.png",
       },
+      {
+        image: "/advertisement/ad4.png",
+      }
     ],
     [],
   );
@@ -40,7 +43,7 @@ const Shamo = () => {
     <div className="w-full flex flex-col  justify-center mt-5 ">
       <div className="">
         <div className="">
-          <div className="relative overflow-hidden rounded-lg border border-blue-400/20">
+          <div className="relative overflow-hidden rounded-lg">
             <img
               key={activeSlide}
               src={slides[activeSlide].image}
