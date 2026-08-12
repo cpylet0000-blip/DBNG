@@ -1,0 +1,71 @@
+/* Styles for the Shamo nav item: subtle hover lift and active bounce */
+
+.shamo-item {
+  /* force the Shamo item to use green and override utility classes */
+  color: #10b981 !important;
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 150ms;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.shamo-item:hover {
+  transform: translateY(-3px) scale(1.06);
+}
+
+.shamo-item svg {
+  transition: transform 260ms ease;
+  transform-origin: center;
+  will-change: transform;
+  /* continuous gentle pulse */
+  animation: shamo-pulse 2000ms ease-in-out infinite;
+}
+
+.shamo-active svg {
+  /* keep the bounce available for route-activated emphasis */
+  animation: shamo-pulse 900ms ease;
+  transform-origin: center bottom;
+}
+
+@keyframes shamo-bounce {
+  0% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-6px);
+  }
+  50% {
+    transform: translateY(0);
+  }
+  70% {
+    transform: translateY(-3px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes shamo-pulse {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.06);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Reduce animation motion for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .shamo-item,
+  .shamo-item svg,
+  .shamo-active svg {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+  }
+}

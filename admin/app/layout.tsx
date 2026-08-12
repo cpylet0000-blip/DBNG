@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dawit Games",
-  description: "Dawit Games",
+  title: "Ghion",
+  description: "Ghion",
   manifest: "/manifest.json",
   icons: {
     icon: "/icons/abol-192.svg",

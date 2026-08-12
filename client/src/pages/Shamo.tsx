@@ -25,7 +25,7 @@ const Shamo = () => {
   useEffect(() => {
     const interval = window.setInterval(() => {
       setActiveSlide((current) => (current + 1) % slides.length);
-    }, 10000);
+    }, 6000);
 
     return () => window.clearInterval(interval);
   }, [slides.length]);
@@ -43,11 +43,11 @@ const Shamo = () => {
     <div className="w-full flex flex-col  justify-center mt-5 ">
       <div className="">
         <div className="">
-          <div className="relative overflow-hidden rounded-lg">
+          <div className="relative overflow-hidden rounded-lg  bg-gray-800/30">
             <img
               key={activeSlide}
               src={slides[activeSlide].image}
-              className="h-[45vh] w-full object-cover transition-opacity duration-1000 ease-in-out opacity-0"
+              className="h-[45vh] w-full object-cover rounded-lg transition-opacity duration-100 ease-in-out opacity-0"
               onLoad={(event) => {
                 const img = event.currentTarget;
                 img.style.opacity = "1";
