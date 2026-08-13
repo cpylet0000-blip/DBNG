@@ -52,12 +52,6 @@ async function seedDepositMethods() {
       isActive: true,
     },
     {
-      name: "M-Pesa",
-      accountInfo: "+254712345678",
-      accountOwner: "Game Platform M-Pesa",
-      isActive: true,
-    },
-    {
       name: "Ebirr",
       accountInfo: "0919876543",
       accountOwner: "Game Platform Ebirr",

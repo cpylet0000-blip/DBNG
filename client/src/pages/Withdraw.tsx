@@ -179,12 +179,12 @@ const Withdraw = () => {
             </h2>
 
             <div className="grid grid-cols-3 gap-2 w=full ">
-              {(["Telebirr", "CBE", "BOA"] as const).map((m) => {
+              {(["Telebirr", "Ebirr", "CBEbirr"] as const).map((m) => {
                 const key = m.toLowerCase();
 
-                let img = "/abyssinia.jpg";
-                if (key.includes("tele")) img = "/telebirr.jpg";
-                else if (key.includes("cbe")) img = "/cbe.jpg";
+                let img = "/CBEbirr.png";
+                if (key.includes("tele")) img = "/Telebirr.png";
+                else if (key.includes("Ebirr")) img = "/Ebirr.png";
 
                 return (
                   <button
