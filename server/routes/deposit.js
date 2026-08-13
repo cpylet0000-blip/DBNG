@@ -1,7 +1,7 @@
-import express from 'express';
-import prisma from '../lib/prisma.js';
+import express from "express";
+import prisma from "../lib/prisma.js";
 
-import pdfParse from 'pdf-parse';
+import pdfParse from "pdf-parse";
 const router = express.Router();
 import axios from "axios";
 /**
@@ -55,7 +55,7 @@ async function getCBETransactionDetails(url) {
     if (receiverMatch) {
       receiver = receiverMatch[1].trim();
       // Remove trailing 'Account' or 'Account1' if present
-      receiver = receiver.replace(/Account\s*1?.*$/i, '').trim();
+      receiver = receiver.replace(/Account\s*1?.*$/i, "").trim();
     }
 
     // Extract the second Account (receiver's account)
@@ -75,65 +75,51 @@ async function getCBETransactionDetails(url) {
   }
 }
 
-
-router.post('/', async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const { userId, transactionId } = req.body;
-    if (!userId || !transactionId) return res.status(400).json({ error: 'Missing userId or transactionId' });
+    if (!userId || !transactionId)
+      return res.status(400).json({ error: "Missing userId or transactionId" });
 
     // Check if transactionId is already approved (exists in Transaction table)
-
-
-
 
     const existingTransaction = await prisma.transaction.findFirst({
       where: { transactionId },
     });
 
     if (existingTransaction) {
-      return res.status(409).json({ error: 'This transaction has already been approved.' });
-
-
+      return res
+        .status(409)
+        .json({ error: "This transaction has already been approved." });
     }
 
     // Prevent multiple pending deposits for the same user
     const existingPending = await prisma.depositRequest.findFirst({
-      where: { userId: Number(userId), status: 'pending' },
+      where: { userId: Number(userId), status: "pending" },
     });
-    if (existingPending) return res.status(409).json({ error: 'ያልተጠናቀቀ የገቢ ጥያቄ አለዎት፣ እባክዎ እስኪጠናቀቅ በትዕግስት ይጠብቁን።' });
+    if (existingPending)
+      return res
+        .status(409)
+        .json({ error: "ያልተጠናቀቀ የገቢ ጥያቄ አለዎት፣ እባክዎ እስኪጠናቀቅ በትዕግስት ይጠብቁን።" });
 
     // Fetch and parse the PDF to get all details
 
-
-
-
-
-
     const url = `https://apps.cbe.com.et:100/?id=${transactionId}`;
     const details = await getCBETransactionDetails(url);
-    if (!details || !details.amount) return res.status(400).json({ error: 'Transaction details not found' });
-
-
-
-
-
+    if (!details || !details.amount)
+      return res.status(400).json({ error: "Transaction details not found" });
 
     const expectedReceiver = process.env.CBE_RECEIVER_NAME;
     const expectedAccount = process.env.CBE_RECEIVER_ACCOUNT;
-    if(details.receiver !== expectedReceiver || details.account !== expectedAccount) {
-      return res.status(400).json({ error: 'Invalid receiver or account.' });
-
-
-
-
-
-
+    if (
+      details.receiver !== expectedReceiver ||
+      details.account !== expectedAccount
+    ) {
+      return res.status(400).json({ error: "Invalid receiver or account." });
     }
     let transaction, deposit;
     try {
       transaction = await prisma.transaction.create({
-
-
         data: {
           userId: Number(userId),
           amount: details.amount,
@@ -145,7 +131,6 @@ router.post('/', async (req, res) => {
       });
       // Create depositRequest for tracking
       deposit = await prisma.depositRequest.create({
-
         data: {
           userId: Number(userId),
           amount: details.amount,
@@ -153,12 +138,11 @@ router.post('/', async (req, res) => {
           paymentDateTime: details.paymentDateTime,
           receiver: details.receiver,
           account: details.account,
-          status: 'approved',
+          status: "approved",
         },
       });
       // Only update balance after both transaction and depositRequest are saved
       await prisma.userBalance.upsert({
-
         where: { userId: Number(userId) },
         update: {
           currentBalance: { increment: details.amount },
@@ -178,91 +162,80 @@ router.post('/', async (req, res) => {
       });
     } catch (err) {
       // Prisma unique constraint error code
-      if (err.code === 'P2002' && err.meta && err.meta.target && err.meta.target.includes('transactionId')) {
-        return res.status(409).json({ error: 'This transaction has already been approved (unique constraint).' });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+      if (
+        err.code === "P2002" &&
+        err.meta &&
+        err.meta.target &&
+        err.meta.target.includes("transactionId")
+      ) {
+        return res
+          .status(409)
+          .json({
+            error:
+              "This transaction has already been approved (unique constraint).",
+          });
       }
       throw err;
     }
     res.json({ success: true, transaction, deposit });
-
-
-
-
-
-
-
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create deposit requested' });
-
-
-
-
-
-
-
-
-
-
-
-
-
+    res.status(500).json({ error: "Failed to create deposit requested" });
   }
 });
 
-router .post('/teleBirr', async (req, res) => {
+router.post("/teleBirr", async (req, res) => {
   try {
     const { userId, transactionId } = req.body;
-    if(!userId || !transactionId) return res.status(400).json({ error: 'Missing userId or transactionId' });
+    if (!userId || !transactionId)
+      return res.status(400).json({ error: "Missing userId or transactionId" });
     // Check if transactionId is already approved (exists in Transaction table)
-    console.log("Checking existing transactions for transactionId:", transactionId);
+    console.log(
+      "Checking existing transactions for transactionId:",
+      transactionId,
+    );
 
     const existingTransactions = await prisma.transaction.findFirst({
       where: { transactionId },
     });
     if (existingTransactions) {
-      return res.status(409).json({ error: 'This transaction has already been approved.' });
+      return res
+        .status(409)
+        .json({ error: "This transaction has already been approved." });
     }
     const url = `https://transactioninfo.ethiotelecom.et/receipt/${transactionId}`;
     const details = await parseTelebirr(url);
-   console.log("Parsed TeleBirr details:", details);
+    console.log("Parsed TeleBirr details:", details);
     if (!details || !details.amount) {
-      return res.status(400).json({ error: 'Transaction details not found or amount missing.' });
+      return res
+        .status(400)
+        .json({ error: "Transaction details not found or amount missing." });
     }
     const expectedTeleReceiver = process.env.TELEBIRR_RECEIVER_NAME;
     const expectedTeleAccount = process.env.TELEBIRR_RECEIVER_ACCOUNT;
     console.log(details);
-    if(details.receiverName !== expectedTeleReceiver || details.receiverPhone !== expectedTeleAccount) {
-      return res.status(400).json({ error: 'Invalid receiver or account.' });
+    if (
+      details.receiverName !== expectedTeleReceiver ||
+      details.receiverPhone !== expectedTeleAccount
+    ) {
+      return res.status(400).json({ error: "Invalid receiver or account." });
     }
     // Check if transactionId is already approved (exists in Transaction table)
     const existingTransaction = await prisma.transaction.findFirst({
       where: { transactionId },
     });
     if (existingTransaction) {
-      return res.status(409).json({ error: 'This transaction has already been approved.' });
+      return res
+        .status(409)
+        .json({ error: "This transaction has already been approved." });
     }
     // Prevent multiple pending deposits for the same user
     const existingPending = await prisma.depositRequest.findFirst({
-      where: { userId: Number(userId), status: 'pending' },
+      where: { userId: Number(userId), status: "pending" },
     });
-    if (existingPending) return res.status(409).json({ error: 'ያልተጠናቀቀ የገቢ ጥያቄ አለዎት፣ እባክዎ እስኪጠናቀቅ በትዕግስት ይጠብቁን።' });
+    if (existingPending)
+      return res
+        .status(409)
+        .json({ error: "ያልተጠናቀቀ የገቢ ጥያቄ አለዎት፣ እባክዎ እስኪጠናቀቅ በትዕግስት ይጠብቁን።" });
 
     console.log("TeleBirr details:", details);
 
@@ -286,7 +259,7 @@ router .post('/teleBirr', async (req, res) => {
           paymentDateTime: details.date,
           receiver: details.receiverName,
           account: details.receiverPhone,
-          status: 'approved',
+          status: "approved",
         },
       });
       // Only update balance after both transaction and depositRequest are saved
@@ -305,39 +278,61 @@ router .post('/teleBirr', async (req, res) => {
       await prisma.user.update({
         where: { id: Number(userId) },
         data: {
-          rewardBalance: { increment: Math.floor(Number(details.amount) * 0.1) },
+          rewardBalance: {
+            increment: Math.floor(Number(details.amount) * 0.1),
+          },
         },
       });
     } catch (err) {
-      if (err.code === 'P2002' && err.meta && err.meta.target && err.meta.target.includes('transactionId')) {
-        return res.status(409).json({ error: 'This transaction has already been approved (unique constraint).' });
+      if (
+        err.code === "P2002" &&
+        err.meta &&
+        err.meta.target &&
+        err.meta.target.includes("transactionId")
+      ) {
+        return res
+          .status(409)
+          .json({
+            error:
+              "This transaction has already been approved (unique constraint).",
+          });
       }
       throw err;
     }
     res.json({ success: true, transaction, deposit });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to process TeleBirr transaction' });
+    res.status(500).json({ error: "Failed to process TeleBirr transaction" });
   }
 });
-router.post('/tele', async (req, res) => {
+router.post("/tele", async (req, res) => {
   try {
-    const { userId, transactionId ,amount} = req.body;
-    if(!userId || !transactionId ||!amount) return res.status(400).json({ error: 'Missing userId or transactionId' });
+    const { userId, transactionId, amount } = req.body;
+    if (!userId || !transactionId || !amount)
+      return res.status(400).json({ error: "Missing userId or transactionId" });
     // Check if transactionId is already approved (exists in Transaction table)
-    console.log("Checking existing transactions for transactionId:", transactionId);
+    console.log(
+      "Checking existing transactions for transactionId:",
+      transactionId,
+    );
 
     const existingTransactions = await prisma.transaction.findFirst({
       where: { transactionId },
     });
     if (existingTransactions) {
-      return res.status(409).json({ error: 'This transaction has already been approved.' });
+      return res
+        .status(409)
+        .json({ error: "This transaction has already been approved." });
     }
-    if (!userId || !amount) return res.status(400).json({ error: 'Missing userId or amount' });
+    if (!userId || !amount)
+      return res.status(400).json({ error: "Missing userId or amount" });
     // Prevent multiple pending deposits for the same user
     const existingPending = await prisma.depositRequest.findFirst({
-      where: { userId: Number(userId), status: 'pending' },
+      where: { userId: Number(userId), status: "pending" },
     });
-    if (existingPending) return res.status(409).json({ error: 'You have a pending deposit request' });
+    if (existingPending)
+      return res
+        .status(409)
+        .json({ error: "You have a pending deposit request" });
     const deposit = await prisma.depositRequest.create({
       data: {
         userId: Number(userId),
@@ -346,39 +341,37 @@ router.post('/tele', async (req, res) => {
         paymentDateTime: "date",
         receiver: "receiver",
         account: "account",
-        status: 'pending',
+        status: "pending",
       },
     });
     res.json({ success: true, deposit });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create deposit request' });
+    res.status(500).json({ error: "Failed to create deposit request" });
   }
 });
 
-
 // GET /deposit/history?userId=123 - get deposit history for a user
-router.get('/history', async (req, res) => {
+router.get("/history", async (req, res) => {
   try {
     const userId = Number(req.query.userId);
-    if (!userId) return res.status(400).json({ error: 'Missing userId' });
+    if (!userId) return res.status(400).json({ error: "Missing userId" });
     const history = await prisma.depositRequest.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       select: {
         id: true,
         amount: true,
         status: true,
         createdAt: true,
         transactionId: true,
-        paymentDateTime:true
+        paymentDateTime: true,
       },
     });
     res.json({ history });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch deposit history' });
+    res.status(500).json({ error: "Failed to fetch deposit history" });
   }
 });
-
 
 export async function parseCBEBirr(transactionId) {
   try {
@@ -391,8 +384,8 @@ export async function parseCBEBirr(transactionId) {
       timeout: 70000,
       headers: {
         "User-Agent": "Mozilla/5.0",
-        "Accept": "application/pdf",
-        "Referer": "https://cbepay1.cbe.com.et/",
+        Accept: "application/pdf",
+        Referer: "https://cbepay1.cbe.com.et/",
       },
     });
 
@@ -413,14 +406,18 @@ export async function parseCBEBirr(transactionId) {
       const detailsSection = text.split(/Transaction Details/i)[1];
       if (detailsSection) {
         // Find all numbers with two decimals in this section
-        const numbers = [...detailsSection.matchAll(/([\d]+\.\d{2})/g)].map(m => Number(m[1])).filter(n => n > 0);
+        const numbers = [...detailsSection.matchAll(/([\d]+\.\d{2})/g)]
+          .map((m) => Number(m[1]))
+          .filter((n) => n > 0);
         if (numbers.length > 0) {
           amount = numbers[numbers.length - 1];
         }
       }
       // 3. Fallback: pick the minimum value among all numbers with two decimals (to avoid picking large numbers from IDs)
       if (amount === null) {
-        const allAmounts = [...text.matchAll(/\b([\d]+\.\d{2})\b/g)].map(m => Number(m[1]));
+        const allAmounts = [...text.matchAll(/\b([\d]+\.\d{2})\b/g)].map((m) =>
+          Number(m[1]),
+        );
         if (allAmounts.length > 0) {
           amount = Math.min(...allAmounts);
         }
@@ -431,7 +428,7 @@ export async function parseCBEBirr(transactionId) {
     // 👤 SENDER (FIXED MULTILINE)
     // =========================
     const senderMatch = text.match(
-      /Debit Account\s*(\d+)\s*-\s*([\s\S]*?)\n\s*Credit Account/i
+      /Debit Account\s*(\d+)\s*-\s*([\s\S]*?)\n\s*Credit Account/i,
     );
 
     const senderAccount = senderMatch ? senderMatch[1] : null;
@@ -443,7 +440,7 @@ export async function parseCBEBirr(transactionId) {
     // 🧾 RECEIVER (NO SPACE FIX)
     // =========================
     const receiverMatch = text.match(
-      /Receiver Name\s*(\d+)\s*-\s*([\s\S]*?)\n\s*Order ID/i
+      /Receiver Name\s*(\d+)\s*-\s*([\s\S]*?)\n\s*Order ID/i,
     );
 
     const receiverAccount = receiverMatch ? receiverMatch[1] : null;
@@ -465,24 +462,20 @@ export async function parseCBEBirr(transactionId) {
 
     // =========================
     // 📅 DATE
-  let date = null;
+    let date = null;
 
-// ✅ Handle merged format like:
-// DCT019CNSZM2026-03-29 21:535.00
-const dateMatch1 = text.match(
-  /(202\d-\d{2}-\d{2})\s*(\d{2}:\d{2})/
-);
+    // ✅ Handle merged format like:
+    // DCT019CNSZM2026-03-29 21:535.00
+    const dateMatch1 = text.match(/(202\d-\d{2}-\d{2})\s*(\d{2}:\d{2})/);
 
-// ✅ Fallback: normal format
-const dateMatch2 = text.match(
-  /\b(202\d-\d{2}-\d{2}\s+\d{2}:\d{2})\b/
-);
+    // ✅ Fallback: normal format
+    const dateMatch2 = text.match(/\b(202\d-\d{2}-\d{2}\s+\d{2}:\d{2})\b/);
 
-if (dateMatch1) {
-  date = `${dateMatch1[1]} ${dateMatch1[2]}`;
-} else if (dateMatch2) {
-  date = dateMatch2[1];
-}
+    if (dateMatch1) {
+      date = `${dateMatch1[1]} ${dateMatch1[2]}`;
+    } else if (dateMatch2) {
+      date = dateMatch2[1];
+    }
 
     return {
       transactionId: txnId,
@@ -494,7 +487,6 @@ if (dateMatch1) {
       senderName,
       senderAccount,
     };
-
   } catch (err) {
     console.error("❌ CBE Birr parse error:", err.message);
     return null;
@@ -502,135 +494,121 @@ if (dateMatch1) {
 }
 router.post("/cbe-birr", async (req, res) => {
   try {
-    const { userId, transactionId } = req.body;
+    const { userId, transactionId, amount } = req.body;
 
-    if (!userId || !transactionId) {
+    if (!userId || !transactionId || !amount) {
       return res.status(400).json({
-        error: "Missing userId or transactionId",
+        error: "Missing userId, transactionId or amount",
       });
     }
 
-    // 🔒 Check duplicate transaction
-    const existingTransaction = await prisma.transaction.findFirst({
-      where: { transactionId },
-    });
+    const normalizedId = String(transactionId).trim();
+    const normalizedAmount = Number(amount);
 
+    if (
+      !normalizedId ||
+      Number.isNaN(normalizedAmount) ||
+      normalizedAmount <= 0
+    ) {
+      return res.status(400).json({
+        error: "Invalid transaction data",
+      });
+    }
+
+    const existingTransaction = await prisma.transaction.findFirst({
+      where: { transactionId: normalizedId },
+    });
     if (existingTransaction) {
       return res.status(409).json({
-        error: "Transaction already used",
+        error: "This transaction has already been approved.",
       });
     }
 
-    // 🚀 Parse PDF
-    const details = await parseCBEBirr(transactionId);
-    console.log(details);
-
-    if (!details || !details.amount) {
-      return res.status(400).json({
-        error: "Invalid or not found transaction",
+    const existingPending = await prisma.depositRequest.findFirst({
+      where: { userId: Number(userId), status: "pending" },
+    });
+    if (existingPending) {
+      return res.status(409).json({
+        error: "You have a pending deposit request",
       });
     }
 
-    // ❌ Reject if not completed
-    if (details.status !== "Completed") {
-      return res.status(400).json({
-        error: "Transaction not completed",
-      });
-    }
-
-
-    const envReceiverName = process.env.cbeBirrReceiverName;
-    const envReceiverAccount = process.env.cbeBirrReceiverAccount;
-    const accountMatches = details.receiverAccount === envReceiverAccount ||
-      (details.receiverAccount && envReceiverAccount && details.receiverAccount.endsWith(envReceiverAccount));
-    if(details.receiverName !== envReceiverName || !accountMatches) {
-
-
-
-
-
-      return res.status(400).json({
-        error: "Invalid receiver or account",
-      });
-    }
-
-    let transaction, deposit;
-
-    try {
-      // 💾 Save transaction
-      transaction = await prisma.transaction.create({
-        data: {
-          userId: Number(userId),
-          amount: details.amount,
-          transactionId,
-          paymentDateTime: details.date,
-          receiver: details.receiverName,
-          account: details.receiverAccount,
-        },
-      });
-
-      // 📥 Save deposit
-      deposit = await prisma.depositRequest.create({
-        data: {
-          userId: Number(userId),
-          amount: details.amount,
-          transactionId,
-          paymentDateTime: details.date,
-          receiver: details.receiverName,
-          account: details.receiverAccount,
-          status: "approved",
-        },
-      });
-
-      // 💰 Update balance
-      await prisma.userBalance.upsert({
-        where: { userId: Number(userId) },
-        update: {
-          currentBalance: { increment: details.amount },
-          totalDeposits: { increment: details.amount },
-        },
-        create: {
-          userId: Number(userId),
-          currentBalance: details.amount,
-          totalDeposits: details.amount,
-        },
-      });
-
-      await prisma.user.update({
-        where: { id: Number(userId) },
-        data: {
-          rewardBalance: { increment: Math.floor(details.amount * 0.1) },
-        },
-      });
-
-    } catch (err) {
-      if (
-        err.code === "P2002" &&
-        err.meta?.target?.includes("transactionId")
-      ) {
-        return res.status(409).json({
-          error: "Duplicate transaction (DB constraint)",
-
-
-
-        });
-      }
-      throw err;
-    }
-
-
-    return res.json({
-      success: true,
-      transaction,
-      deposit,
+    const deposit = await prisma.depositRequest.create({
+      data: {
+        userId: Number(userId),
+        amount: normalizedAmount,
+        transactionId: normalizedId,
+        paymentDateTime: new Date().toISOString(),
+        receiver: "CBEBirr Manual Approval",
+        account: "CBEBirr",
+        status: "pending",
+      },
     });
 
+    return res.json({ success: true, deposit });
   } catch (err) {
-    console.error("❌ CBE Birr endpoint error:", err);
+    console.error("❌ CBEBirr pending request error:", err);
+    return res.status(500).json({ error: "Failed to create deposit request" });
+  }
+});
 
-    return res.status(500).json({
-      error: "Failed to process CBE Birr",
+router.post("/ebirr", async (req, res) => {
+  try {
+    const { userId, transactionId, amount } = req.body;
+
+    if (!userId || !transactionId || !amount) {
+      return res.status(400).json({
+        error: "Missing userId, transactionId or amount",
+      });
+    }
+
+    const normalizedId = String(transactionId).trim();
+    const normalizedAmount = Number(amount);
+
+    if (
+      !normalizedId ||
+      Number.isNaN(normalizedAmount) ||
+      normalizedAmount <= 0
+    ) {
+      return res.status(400).json({
+        error: "Invalid transaction data",
+      });
+    }
+
+    const existingTransaction = await prisma.transaction.findFirst({
+      where: { transactionId: normalizedId },
     });
+    if (existingTransaction) {
+      return res.status(409).json({
+        error: "This transaction has already been approved.",
+      });
+    }
+
+    const existingPending = await prisma.depositRequest.findFirst({
+      where: { userId: Number(userId), status: "pending" },
+    });
+    if (existingPending) {
+      return res.status(409).json({
+        error: "You have a pending deposit request",
+      });
+    }
+
+    const deposit = await prisma.depositRequest.create({
+      data: {
+        userId: Number(userId),
+        amount: normalizedAmount,
+        transactionId: normalizedId,
+        paymentDateTime: new Date().toISOString(),
+        receiver: "Ebirr Manual Approval",
+        account: "Ebirr",
+        status: "pending",
+      },
+    });
+
+    return res.json({ success: true, deposit });
+  } catch (err) {
+    console.error("❌ Ebirr pending request error:", err);
+    return res.status(500).json({ error: "Failed to create deposit request" });
   }
 });
 

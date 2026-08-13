@@ -47,7 +47,7 @@ export const DepositMethodsProvider: React.FC<{
         setDepositMethods(Array.isArray(data.methods) ? data.methods : []);
       } catch (err) {
         console.error("Deposit methods fetch failed", err);
-        setMethodsError("Could not load deposit methods");
+        setMethodsError("የክፍያ ዘዴዎችን ማግኘት አልቻለም።");
         setDepositMethods([]);
       } finally {
         setMethodsLoading(false);

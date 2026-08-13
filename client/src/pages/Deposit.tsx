@@ -26,7 +26,7 @@ type DepositMethod = {
   isActive: boolean;
 };
 
-const ERROR_TIMEOUT = 3500;
+const ERROR_TIMEOUT = 10000;
 
 const Deposit = () => {
   const { profile } = useProfile();
@@ -77,7 +77,31 @@ const Deposit = () => {
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
   const showError = (msg: string) => {
-    setError(msg);
+    const translate = (text: string) => {
+      if (!text) return text;
+      // common backend messages -> Amharic
+      if (text.includes("This transaction has already been approved"))
+        return "ይህ ግብይት ቀድሞ ተፈቀዷል።";
+      if (
+        text.includes("Missing userId") ||
+        text.includes("Missing userId or transactionId")
+      )
+        return "userId ወይም transactionId የለም።";
+      if (text.includes("Transaction details not found"))
+        return "የግብይት ዝርዝር አልተገኘም።";
+      if (text.includes("Failed to submit deposit request"))
+        return "የገቢ ጥያቄ ማስገባት አልተሳካም።";
+      if (
+        text.includes("You have a pending deposit request") ||
+        text.includes("You have a pending deposit request")
+      )
+        return "ያልተጠናቀቀ የገቢ ጥያቄ አለዎት፣ እባክዎ እስኪጠናቀቅ በትዕግስት ይጠብቁን።";
+      // if already in Amharic, return as-is
+      if (/[\u1200-\u137F]/.test(text)) return text;
+      return text; // fallback: show original
+    };
+
+    setError(translate(msg));
     if (errorTimerRef.current) window.clearTimeout(errorTimerRef.current);
     errorTimerRef.current = window.setTimeout(() => {
       setError(null);
@@ -94,27 +118,91 @@ const Deposit = () => {
     [history],
   );
 
-  const isTelebirr =
-    selectedMethod && selectedMethod.name.toLowerCase().includes("tele");
-  const isBoa =
-    selectedMethod && selectedMethod.name.toLowerCase().includes("boa");
-  const isCbeBirr =
-    selectedMethod && selectedMethod.name.toLowerCase() === "cbe birr";
+  const methodName = selectedMethod?.name.toLowerCase() ?? "";
+  const walletPattern =
+    /(?:cbe|ceb)\s*birr|cbebirr|cebbirr|cbe-birr|ceb-birr|(?:e|ebirr)\s*birr|ebirr|e-birr/;
 
-  const isCbe = selectedMethod && selectedMethod.name.toLowerCase() === "cbe";
+  const isTelebirr = methodName.includes("tele");
+  const isBoa = methodName.includes("boa");
+  const isCbeBirr = /(?:cbe|ceb)\s*birr|cbebirr|cebbirr|cbe-birr|ceb-birr/.test(
+    methodName,
+  );
+  const isEbirr = /(?:e|ebirr)\s*birr|ebirr|e-birr/.test(methodName);
+  const isCbe = methodName.includes("cbe") && !isCbeBirr;
+
+  useEffect(() => {
+    if (!smsText) return;
+    if (!selectedMethod) return;
+    const key = selectedMethod.name.toLowerCase();
+    const shouldParse =
+      key.includes("tele") ||
+      key.includes("boa") ||
+      walletPattern.test(key) ||
+      key.includes("cbe");
+
+    if (!shouldParse) return;
+
+    const id =
+      extractTelebirrTransactionId(smsText) ||
+      extractBoaTransactionId(smsText) ||
+      extractCbeBirrTxnIdOnly(smsText) ||
+      extractCbeTransactionId(smsText, selectedMethod.accountInfo);
+    const amt =
+      key.includes("tele") || key.includes("boa") || walletPattern.test(key)
+        ? extractAmount(smsText)
+        : null;
+
+    if (id) setTransactionId(id);
+    if (amt) setAmount(amt);
+  }, [smsText, selectedMethod]);
+
+  const parseSmsNow = (text?: string) => {
+    const value = text ?? smsText ?? "";
+    if (!value || !selectedMethod) return;
+    const key = selectedMethod.name.toLowerCase();
+    const shouldParse =
+      key.includes("tele") ||
+      key.includes("boa") ||
+      walletPattern.test(key) ||
+      key.includes("cbe");
+
+    if (!shouldParse) return;
+
+    const id =
+      extractTelebirrTransactionId(value) ||
+      extractBoaTransactionId(value) ||
+      extractCbeBirrTxnIdOnly(value) ||
+      extractCbeTransactionId(value, selectedMethod.accountInfo);
+    const amt =
+      key.includes("tele") || key.includes("boa") || walletPattern.test(key)
+        ? extractAmount(value)
+        : null;
+
+    if (id) setTransactionId(id);
+    if (amt) setAmount(amt);
+  };
+
   const canRequest =
     selectedMethod &&
     selectedMethod.isActive &&
     ((isTelebirr &&
-      transactionId.trim().length > 0 &&
-      amount !== "" &&
-      !isNaN(Number(amount)) &&
-      Number(amount) > 0) ||
-      (isBoa &&
-        transactionId.trim().length > 0 &&
+      ((transactionId.trim().length > 0 &&
         amount !== "" &&
         !isNaN(Number(amount)) &&
         Number(amount) > 0) ||
+        smsText.trim().length > 0)) ||
+      (isBoa &&
+        ((transactionId.trim().length > 0 &&
+          amount !== "" &&
+          !isNaN(Number(amount)) &&
+          Number(amount) > 0) ||
+          smsText.trim().length > 0)) ||
+      (isEbirr &&
+        ((transactionId.trim().length > 0 &&
+          amount !== "" &&
+          !isNaN(Number(amount)) &&
+          Number(amount) > 0) ||
+          smsText.trim().length > 0)) ||
       ((isCbe || isCbeBirr) && transactionId.trim().length > 0)) &&
     !hasPending &&
     !loading;
@@ -143,7 +231,7 @@ const Deposit = () => {
       const data = await res.json();
       setHistory(Array.isArray(data.history) ? data.history : []);
     } catch {
-      setHistoryError("Could not load deposit history");
+      setHistoryError("የገቢ ታሪክን ማንበብ አልተቻለም።");
     } finally {
       setHistoryLoading(false);
     }
@@ -155,16 +243,33 @@ const Deposit = () => {
 
   const requestDeposit = async () => {
     if (!selectedMethod || !selectedMethod.isActive) {
-      showError("Please select a payment method");
+      showError("እባክዎ የክፍያ ዘዴ ይምረጡ።");
       return;
     }
-    if (!transactionId.trim()) {
+
+    const parsedTxIdFromSms =
+      extractCbeBirrTxnIdOnly(smsText) ||
+      extractTelebirrTransactionId(smsText) ||
+      extractBoaTransactionId(smsText) ||
+      extractCbeTransactionId(smsText, selectedMethod.accountInfo);
+
+    const resolvedTransactionId = (
+      transactionId ||
+      parsedTxIdFromSms ||
+      ""
+    ).trim();
+    const resolvedAmount =
+      amount !== "" && amount !== null && amount !== undefined
+        ? Number(amount)
+        : (extractAmount(smsText) ?? 0);
+
+    if (!resolvedTransactionId) {
       showError("እባክዎን መጀመሪያ የግብይት መለያ (Transaction ID) ያስገቡ");
       return;
     }
     if (
-      (isTelebirr || isBoa) &&
-      (amount === "" || isNaN(Number(amount)) || Number(amount) <= 0)
+      (isTelebirr || isBoa || isCbeBirr || isEbirr) &&
+      (!Number.isFinite(resolvedAmount) || resolvedAmount <= 0)
     ) {
       showError("እባክዎን የገቢ መጠን (Amount) ያስገቡ");
       return;
@@ -177,29 +282,33 @@ const Deposit = () => {
     setError(null);
     try {
       let endpoint = `${BACKEND_URL}/depositer`;
-      let txId = transactionId.trim();
+      let txId = resolvedTransactionId;
       // eslint-disable-next-line prefer-const
       let body: any = { userId: profile?.id };
       if (isTelebirr) {
         endpoint = `${BACKEND_URL}/depositer/tele`;
         body.transactionId = txId;
-        body.amount = Number(amount);
+        body.amount = Number(resolvedAmount);
       } else if (isBoa) {
         endpoint = `${BACKEND_URL}/depositer/tele`;
         body.transactionId = txId;
-        body.amount = Number(amount);
-      } else if (isCbeBirr) {
-        const cbeBirrExtracted = extractCbeBirrTxnIdOnly(txId);
+        body.amount = Number(resolvedAmount);
+      } else if (isCbeBirr || isEbirr) {
+        const lbExtracted =
+          extractCbeBirrTxnIdOnly(txId || smsText) ||
+          extractCbeBirrTxnIdOnly(smsText) ||
+          txId;
 
-        if (!cbeBirrExtracted) {
-          showError("Please ensure you pasted a valid CBE Birr SMS or Txn ID.");
+        if (!lbExtracted) {
+          showError("እባክዎ የተገባ የSMS ወይም የTransaction ID ያጥፉ።");
           setLoading(false);
           return;
         }
 
-        endpoint = `${BACKEND_URL}/depositer/cbe-birr`;
-        txId = cbeBirrExtracted;
+        endpoint = `${BACKEND_URL}/depositer/${isEbirr ? "ebirr" : "cbe-birr"}`;
+        txId = lbExtracted;
         body.transactionId = txId;
+        body.amount = Number(resolvedAmount || 0);
       } else if (isCbe) {
         const cbeExtracted = extractCbeTransactionId(
           txId,
@@ -207,7 +316,7 @@ const Deposit = () => {
         );
 
         if (!cbeExtracted) {
-          showError("Please ensure you pasted the correct SMS or ID.");
+          showError("እባክዎ ትክክለኛውን SMS ወይም ID እንደተገጠሙ ያረጋግጡ።");
           setLoading(false);
           return;
         }
@@ -223,16 +332,23 @@ const Deposit = () => {
       });
       const data = await res.json();
       if (!res.ok) {
-        showError(data.error || "Failed to submit deposit request");
+        showError(data.error || "የገቢ ጥያቄ ማስገባት አልተሳካም።");
+        setTransactionId("");
+        setAmount("");
+        setSmsText("");
         return;
       }
       setSuccess(true);
       setTransactionId("");
       setAmount("");
+      setSmsText("");
       fetchHistory();
-      setTimeout(() => setSuccess(false), 3000);
+      setTimeout(() => setSuccess(false), ERROR_TIMEOUT);
     } catch {
-      showError("Failed to submit deposit request");
+      showError("የገቢ ጥያቄ ማስገባት አልተሳካም።");
+      setTransactionId("");
+      setAmount("");
+      setSmsText("");
     } finally {
       setLoading(false);
     }
@@ -259,10 +375,31 @@ const Deposit = () => {
       return Number(transfer[1].replace(/,/g, ""));
     }
 
-    // 4️⃣ Fallback: first ETB
+    // 4️⃣ Ebirr wallet SMS: "You sent ETB5" / "You sent ETB 5" / "Bonus890 ETB 377.00 ETBDeposit"
+    const ebirrSent = clean.match(
+      /(?:sent|paid)\s*(?:ETB\s*)?([\d,]+(?:\.\d{1,2})?)(?:\s*(?:ETB|Br|Birr|ብር))?/i,
+    );
+    if (ebirrSent) return Number(ebirrSent[1].replace(/,/g, ""));
+
+    // 5️⃣ CBEBirr wallet SMS: "you have sent 205.00Br"
+    const cbebirr = clean.match(
+      /(?:sent|paid|transfer(?:red)?)\s*([\d,]+(?:\.\d{1,2})?)\s*(?:Br|Birr|ብር)/i,
+    );
+    if (cbebirr) return Number(cbebirr[1].replace(/,/g, ""));
+
+    // 6️⃣ Prefer the last valid ETB/Birr amount so bonus text and trailing Balance do not override the real transfer amount.
+    const amountMatches = [
+      ...clean.matchAll(/([\d,]+(?:\.\d{1,2})?)\s*(?:ETB|Br|Birr|ብር)/gi),
+    ];
+    if (amountMatches.length > 0) {
+      const lastMatch = amountMatches[amountMatches.length - 1];
+      return Number(lastMatch[1].replace(/,/g, ""));
+    }
+
+    // 7️⃣ Fallback: first ETB
     const all = [...clean.matchAll(/ETB\s*([\d,]+(?:\.\d{1,2})?)/gi)];
     if (all.length > 0) {
-      return Number(all[0][1].replace(/,/g, ""));
+      return Number(all[all.length - 1][1].replace(/,/g, ""));
     }
 
     return null;
@@ -367,15 +504,20 @@ const Deposit = () => {
 
     const clean = text.replace(/\s+/g, " ");
 
-    // Match 'Txn ID' followed by 8-20 alphanumeric (case-insensitive)
-    const txnId = clean.match(/Txn\s*ID\s*([A-Z0-9]{8,20})/i);
-    if (txnId) return txnId[1].toUpperCase();
+    const patterns = [
+      /(?:Txn|Transaction)\s*(?:ID|Id|id)?\s*[:=]?\s*([A-Z0-9]{8,40})/i,
+      /(?:^|[\s>\-])(?:Id|ID)\s*[:=]?\s*([A-Z0-9]{8,40})\b/i,
+      /(?:^|[\s>\-])Transaction\s*Id\s*[:=]?\s*([A-Z0-9]{8,40})\b/i,
+      /(?:TID|tid)=([A-Z0-9]{8,40})/i,
+      /aureceipt\?TID=([A-Z0-9]{8,40})/i,
+      /receipt\.ebirr\.com\/(?:[^\s/]+\/)?([A-Z0-9]{8,40})/i,
+    ];
 
-    // From URL
-    const url = clean.match(/TID=([A-Z0-9]{8,20})/i);
-    if (url) return url[1].toUpperCase();
+    for (const pattern of patterns) {
+      const match = clean.match(pattern);
+      if (match) return match[1].toUpperCase();
+    }
 
-    // Direct ID (DCT, DD, etc)
     const direct = clean.match(/\bD[A-Z0-9]{7,19}\b/i);
     if (direct) return direct[0].toUpperCase();
 
@@ -512,163 +654,123 @@ const Deposit = () => {
         >
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm h-screen" />
           <div
-            className="relative w-full max-w-md bg-gray-800/50 rounded-2xl shadow-xl p-5 z-10 border-[1.5px] border-blue-700/30"
+            className="relative w-full max-w-md bg-gray-800/50 rounded-2xl shadow-xl p-5 z-10 border-[1.5px] border-blue-700/30 h-[70vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center border-b pb-3">
-              <h2 className="text-lg font-bold text-white text-center">
-                Mr {selectedMethod.accountOwner || selectedMethod.name}
-              </h2>
-              <button
-                onClick={() => setShowAccountModal(false)}
-                className="text-blue-600 hover:text-blue-500 text-md font-bold "
-              >
-                ✕
-              </button>
-            </div>
+            <div className="h-full overflow-auto">
+              <div className="flex justify-between items-center border-b pb-3">
+                <h2 className="text-lg font-bold text-white text-center">
+                  Mr {selectedMethod.accountOwner || selectedMethod.name}
+                </h2>
+                <button
+                  onClick={() => setShowAccountModal(false)}
+                  className="text-blue-600 hover:text-blue-500 text-md font-bold "
+                >
+                  ✕
+                </button>
+              </div>
 
-            {/* ACCOUNT BOX */}
-            <div className="mt-4 bg-black border-[1.5px] border-slate-800  rounded-md py-1 px-2 flex justify-between items-center">
-              <span
-                className={`text-md font-medium break-all transition-all duration-300 ${
-                  copiedAccount === selectedMethod.accountInfo
-                    ? "text-green-400"
-                    : "text-white"
-                }`}
-              >
-                {copiedAccount === selectedMethod.accountInfo
-                  ? "✔ Copied"
-                  : selectedMethod.accountInfo}
-              </span>
-              <button
-                onClick={() => handleCopyAccount(selectedMethod.accountInfo)}
-                className="text-xs px-3 py-1 rounded-md border-[1.5px] font-semibold transition text-blue-600"
-              >
-                Copy
-              </button>
-            </div>
+              {/* ACCOUNT BOX */}
+              <div className="mt-4 bg-black border-[1.5px] border-slate-800  rounded-md py-1 px-2 flex justify-between items-center">
+                <span
+                  className={`text-md font-medium break-all transition-all duration-300 ${
+                    copiedAccount === selectedMethod.accountInfo
+                      ? "text-green-400"
+                      : "text-white"
+                  }`}
+                >
+                  {copiedAccount === selectedMethod.accountInfo
+                    ? "✔ Copied"
+                    : selectedMethod.accountInfo}
+                </span>
+                <button
+                  onClick={() => handleCopyAccount(selectedMethod.accountInfo)}
+                  className="text-xs px-3 py-1 rounded-md border-[1.5px] font-semibold transition text-blue-600"
+                >
+                  Copy
+                </button>
+              </div>
 
-            {/* FORM */}
-            {selectedMethod?.isActive &&
-              (isTelebirr || isBoa || isCbe || isCbeBirr) && (
-                <div className="mt-4 space-y-4 ">
-                  {/* TEXTAREA */}
-                  <div>
-                    <label className="text-sm text-gray-300 font-medium">
-                      ሙሉ SMS ከዚህ በታች paste ያድርጉ።
-                    </label>
-                    <textarea
-                      value={smsText}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setSmsText(v);
-                        setError(null);
-
-                        if (!selectedMethod) return;
-
-                        if (isTelebirr) {
-                          const id = extractTelebirrTransactionId(v);
-                          if (id) setTransactionId(id);
-                          const amt = extractAmount(v);
-                          if (amt) setAmount(amt);
-                        } else if (isBoa) {
-                          const id = extractBoaTransactionId(v);
-                          if (id) setTransactionId(id);
-                          const amt = extractAmount(v);
-                          if (amt) setAmount(amt);
-                        } else if (isCbeBirr) {
-                          const id = extractCbeBirrTxnIdOnly(v);
-                          if (id) setTransactionId(id);
-                        } else if (isCbe) {
-                          const id = extractCbeTransactionId(
-                            v,
-                            selectedMethod.accountInfo,
-                          );
-                          if (id) setTransactionId(id);
-                        } else {
-                          setTransactionId(v);
-                        }
-                      }}
-                      onPaste={(e) => {
-                        const pasted = e.clipboardData.getData("text");
-                        setSmsText(pasted);
-                        setError(null);
-
-                        if (!selectedMethod) {
-                          setTransactionId(pasted);
+              {/* FORM */}
+              {selectedMethod?.isActive &&
+                (isTelebirr || isBoa || isCbe || isCbeBirr || isEbirr) && (
+                  <div className="mt-4 space-y-4 ">
+                    {/* TEXTAREA */}
+                    <div>
+                      <label className="text-sm text-gray-300 font-medium">
+                        ሙሉ SMS ከዚህ በታች paste ያድርጉ።
+                      </label>
+                      <textarea
+                        value={smsText}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setSmsText(v);
+                          setError(null);
+                        }}
+                        onInput={(e) => {
+                          const v = (e.target as HTMLTextAreaElement).value;
+                          setSmsText(v);
+                          setError(null);
+                          // attempt parse on input for mobile reliability
+                          parseSmsNow(v);
+                        }}
+                        onPaste={(e) => {
+                          const pasted = e.clipboardData.getData("text");
+                          setSmsText(pasted);
+                          setError(null);
+                          parseSmsNow(pasted);
                           e.preventDefault();
-                          return;
+                        }}
+                        onBlur={() => parseSmsNow()}
+                        placeholder="Paste SMS here..."
+                        className="w-full h-[100px] mt-1 border-[1.5px] border-slate-800 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 outline-none bg-black"
+                      />
+                      {/* Mobile fallback: parse & enable submit manually */}
+                      {/* fallback removed; parsing runs on input/paste/blur */}
+                    </div>
+                    {/* AMOUNT */}
+                    {(isTelebirr || isBoa || isCbeBirr || isEbirr) && (
+                      <input
+                        type="number"
+                        value={amount}
+                        onChange={(e) =>
+                          setAmount(
+                            e.target.value === "" ? "" : Number(e.target.value),
+                          )
                         }
-
-                        if (isTelebirr) {
-                          const id = extractTelebirrTransactionId(pasted);
-                          if (id) setTransactionId(id);
-                          const amt = extractAmount(pasted);
-                          if (amt) setAmount(amt);
-                        } else if (isBoa) {
-                          const id = extractBoaTransactionId(pasted);
-                          if (id) setTransactionId(id);
-                          const amt = extractAmount(pasted);
-                          if (amt) setAmount(amt);
-                        } else if (isCbeBirr) {
-                          const id = extractCbeBirrTxnIdOnly(pasted);
-                          if (id) setTransactionId(id);
-                        } else if (isCbe) {
-                          const id = extractCbeTransactionId(
-                            pasted,
-                            selectedMethod.accountInfo,
-                          );
-                          if (id) setTransactionId(id);
-                        } else {
-                          setTransactionId(pasted);
-                        }
-
-                        e.preventDefault();
-                      }}
-                      placeholder="Paste SMS here..."
-                      className="w-full h-[100px] mt-1 border-[1.5px] border-slate-800 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 outline-none bg-black"
-                    />
-                  </div>
-                  {/* AMOUNT */}
-                  {(isTelebirr || isBoa) && (
-                    <input
-                      type="number"
-                      value={amount}
-                      onChange={(e) =>
-                        setAmount(
-                          e.target.value === "" ? "" : Number(e.target.value),
-                        )
-                      }
-                      placeholder="Enter amount"
-                      min={1}
-                      className="w-35 border-[1.5px] border-slate-800 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 outline-none bg-black"
-                    />
-                  )}
-                  {/* BUTTON */}
-                  <button
-                    onClick={requestDeposit}
-                    disabled={!canRequest}
-                    className={`w-full py-2 rounded-lg text-sm font-semibold transition
+                        placeholder="Enter amount"
+                        min={1}
+                        className="w-35 border-[1.5px] border-slate-800 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 outline-none bg-black"
+                      />
+                    )}
+                    {/* BUTTON */}
+                    <button
+                      onClick={requestDeposit}
+                      disabled={!canRequest}
+                      className={`w-full py-2 rounded-lg text-sm font-semibold transition
               ${
                 canRequest
                   ? "bg-blue-500 text-black hover:bg-blue-600"
                   : "bg-slate-800 text-slate-500"
               }`}
-                  >
-                    {loading ? "Processing..." : "Submit"}
-                  </button>
+                    >
+                      {loading ? "Processing..." : "Submit"}
+                    </button>
 
-                  {/* ERROR */}
-                  {error && <div className="text-xs text-red-500">{error}</div>}
+                    {/* ERROR */}
+                    {error && (
+                      <div className="text-xs text-red-500">{error}</div>
+                    )}
 
-                  {/* SUCCESS */}
-                  {success && (
-                    <div className="text-xs text-green-600">
-                      Deposit request sent
-                    </div>
-                  )}
-                </div>
-              )}
+                    {/* SUCCESS */}
+                    {success && (
+                      <div className="text-xs text-green-600">
+                        የገቢ ጥያቄዎ ተልኳል።
+                      </div>
+                    )}
+                  </div>
+                )}
+            </div>
           </div>
         </div>
       )}
