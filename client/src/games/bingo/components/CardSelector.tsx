@@ -269,6 +269,10 @@ export const CardSelector = ({
         setSelectedCard(null);
         void refreshProfile();
         if (triggerStakeRefresh) void triggerStakeRefresh();
+        // Optimistically join immediately after confirming a card to reduce delay
+        setIsJoiningGame(true);
+        if (onGoToGame) onGoToGame();
+        else onSelectCard([confirmedCardId]);
       } else {
         alert("Selected by another player, choose a different card");
       }
@@ -296,9 +300,12 @@ export const CardSelector = ({
   useEffect(() => {
     const sessionJustBecameActive =
       sessionStatus === "active" &&
-      prevSessionStatusRef.current !== null &&   // had a previous value (not first load)
+      prevSessionStatusRef.current !== null && // had a previous value (not first load)
       prevSessionStatusRef.current !== "active"; // and it wasn't already active
-    if (confirmedCards.length > 0 && (countdown === 0 || sessionJustBecameActive)) {
+    if (
+      confirmedCards.length > 0 &&
+      (countdown === 0 || sessionJustBecameActive)
+    ) {
       handleGoToGame();
     }
   }, [countdown, sessionStatus, confirmedCards.length, handleGoToGame]);
@@ -380,8 +387,9 @@ export const CardSelector = ({
               return (
                 <div
                   key={cardId}
-                  className={`relative flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${colors[cardId % colors.length]
-                    } shadow-lg`}
+                  className={`relative flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${
+                    colors[cardId % colors.length]
+                  } shadow-lg`}
                 >
                   {/* Shine */}
                   <div className="absolute left-1 top-1 h-2 w-2 rounded-full bg-white/80 blur-[1px]" />
@@ -402,12 +410,13 @@ export const CardSelector = ({
             disabled={
               isJoiningGame || (hasActiveGame && confirmedCards.length === 0)
             }
-            className={`ml-3  rounded-md px-4 py-1.5 text-xs font-semibold transition-all ${isJoiningGame
-              ? "cursor-not-allowed bg-slate-700 text-slate-400"
-              : hasActiveGame
-                ? "cursor-not-allowed bg-slate-600 text-slate-300"
-                : "bg-gradient-to-r from-amber-400 to-orange-500 text-black hover:scale-105 hover:shadow-lg hover:shadow-amber-500/30"
-              }`}
+            className={`ml-3  rounded-md px-4 py-1.5 text-xs font-semibold transition-all ${
+              isJoiningGame
+                ? "cursor-not-allowed bg-slate-700 text-slate-400"
+                : hasActiveGame
+                  ? "cursor-not-allowed bg-slate-600 text-slate-300"
+                  : "bg-gradient-to-r from-amber-400 to-orange-500 text-black hover:scale-105 hover:shadow-lg hover:shadow-amber-500/30"
+            }`}
           >
             {isJoiningGame
               ? "..."
@@ -428,60 +437,61 @@ export const CardSelector = ({
         >
           {localCards.length === 0
             ? Array.from({ length: 200 }).map((_, i) => (
-              <div
-                key={`skeleton-${i}`}
-                className="aspect-square rounded-[7.5px] bg-blue-700  text-sm font-bold flex items-center justify-center text-gray-300 transition-all duration-300"
-              >
-                {i + 1}
-              </div>
-            ))
-            : localCards.map((card) => {
-              const taken = !card.isAvailable;
-              const confirmed = confirmedCards.includes(card.cardId);
-              const limitReached =
-                confirmedCards.length >= MAX_SELECTION && !confirmed;
-              // Enforce max 1 card for reward balance, even after refresh
-              const rewardLimitReached =
-                isRewardOnly && sessionCardCount >= 1 && !confirmed;
-              return (
-                <button
-                  key={card.cardId}
-                  disabled={
-                    taken ||
-                    confirmed ||
-                    hasActiveGame ||
-                    limitReached ||
-                    rewardLimitReached
-                  }
-                  onClick={() => {
-                    // Already calculated userBalance, rewardBalance, totalAvailable above
-                    if (totalAvailable < stake) {
-                      alert("Insufficient balance");
-                      return;
-                    }
-                    // If only reward balance is available, allow only one card
-                    // Enforce max 1 card for reward balance, even after refresh
-                    if (isRewardOnly && sessionCardCount >= 1) {
-                      alert(
-                        "You can only select one card with reward balance.",
-                      );
-                      return;
-                    }
-                    setSelectedCard(card);
-                  }}
-                  className={`aspect-square rounded-[7.5px] text-sm font-bold flex items-center justify-center transition-all ${taken
-                    ? "bg-[#3d3d3d] text-slate-200 "
-                    : confirmed
-                      ? "bg-green-800 text-slate-400 cursor-not-allowed"
-                      : limitReached
-                        ? "bg-blue-700 text-slate-300 cursor-not-allowed"
-                        : "relative overflow-hidden text-gray-200 hover:scale-105  active:translate-y-1  bg-blue-700"
-                    }`}
+                <div
+                  key={`skeleton-${i}`}
+                  className="aspect-square rounded-[7.5px] bg-blue-700  text-sm font-bold flex items-center justify-center text-gray-300 transition-all duration-300"
                 >
-                  {card.cardId}
-                </button>
-              );
-            })}
+                  {i + 1}
+                </div>
+              ))
+            : localCards.map((card) => {
+                const taken = !card.isAvailable;
+                const confirmed = confirmedCards.includes(card.cardId);
+                const limitReached =
+                  confirmedCards.length >= MAX_SELECTION && !confirmed;
+                // Enforce max 1 card for reward balance, even after refresh
+                const rewardLimitReached =
+                  isRewardOnly && sessionCardCount >= 1 && !confirmed;
+                return (
+                  <button
+                    key={card.cardId}
+                    disabled={
+                      taken ||
+                      confirmed ||
+                      hasActiveGame ||
+                      limitReached ||
+                      rewardLimitReached
+                    }
+                    onClick={() => {
+                      // Already calculated userBalance, rewardBalance, totalAvailable above
+                      if (totalAvailable < stake) {
+                        alert("Insufficient balance");
+                        return;
+                      }
+                      // If only reward balance is available, allow only one card
+                      // Enforce max 1 card for reward balance, even after refresh
+                      if (isRewardOnly && sessionCardCount >= 1) {
+                        alert(
+                          "You can only select one card with reward balance.",
+                        );
+                        return;
+                      }
+                      setSelectedCard(card);
+                    }}
+                    className={`aspect-square rounded-[7.5px] text-sm font-bold flex items-center justify-center transition-all ${
+                      taken
+                        ? "bg-[#3d3d3d] text-slate-200 "
+                        : confirmed
+                          ? "bg-green-800 text-slate-400 cursor-not-allowed"
+                          : limitReached
+                            ? "bg-blue-700 text-slate-300 cursor-not-allowed"
+                            : "relative overflow-hidden text-gray-200 hover:scale-105  active:translate-y-1  bg-blue-700"
+                    }`}
+                  >
+                    {card.cardId}
+                  </button>
+                );
+              })}
         </div>
 
         {hasActiveGame && confirmedCards.length === 0 && (

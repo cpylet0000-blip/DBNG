@@ -190,7 +190,7 @@ export const BingoCard = ({
                 textColor = "text-black";
               } else if (marked || (autoMark && called)) {
                 cellClass =
-                  "bg-emerald-500 border border-emerald-400 shadow-[0_0_6px_rgba(34,197,94,0.8)]";
+                  "bg-gradient-to-br from-orange-500 to-red-600 shadow-lg shadow-orange-500/30";
                 textColor = "text-white";
               } else if (called) {
                 cellClass =

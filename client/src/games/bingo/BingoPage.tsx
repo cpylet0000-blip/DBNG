@@ -396,7 +396,7 @@ const BingoPageContent = () => {
           </button>
 
           {/* BET */}
-          <div className="flex-1 flex items-center justify-center gap-[3px] px-[1.8px] py-1 bg-gradient-to-r from-amber-500/10 to-amber-500/5 rounded-lg border border-amber-500/30 h-8 min-w-0">
+          <div className="flex-1 flex items-center justify-center gap-[3px] px-[1.5px] py-1 bg-gradient-to-r from-amber-500/10 to-amber-500/5 rounded-md border border-amber-500/30 h-8 min-w-0">
             <span className="text-[8px] text-gray-400 font-bold uppercase tracking-wider whitespace-nowrap">
               Bet
             </span>
@@ -409,7 +409,7 @@ const BingoPageContent = () => {
           </div>
 
           {/* DERASH */}
-          <div className="flex-1 flex items-center justify-center gap-[3px] px-[1.8px] py-1 bg-gradient-to-r from-blue-500/10 to-blue-500/5 rounded-lg border border-blue-500/30 h-8 min-w-0">
+          <div className="flex-1 flex items-center justify-center gap-[3px] px-[1.5px] py-1 bg-gradient-to-r from-blue-500/10 to-blue-500/5 rounded-md border border-blue-500/30 h-8 min-w-0">
             <span className="text-[8px] text-gray-400 font-bold uppercase tracking-wider whitespace-nowrap">
               Derash
             </span>
@@ -427,7 +427,7 @@ const BingoPageContent = () => {
           </div>
 
           {/* PLAYERS */}
-          <div className="flex-1 flex items-center justify-center gap-[3px] px-[1.8px] py-1 bg-gradient-to-r from-purple-500/10 to-purple-500/5 rounded-lg border border-purple-500/30 h-8 min-w-0">
+          <div className="flex-1 flex items-center justify-center gap-[3px] px-[1.5px] py-1 bg-gradient-to-r from-purple-500/10 to-purple-500/5 rounded-md border border-purple-500/30 h-8 min-w-0">
             <span className="text-[8px] text-gray-400 font-bold uppercase tracking-wider whitespace-nowrap">
               Players
             </span>
@@ -437,7 +437,7 @@ const BingoPageContent = () => {
           </div>
 
           {/* CALLED */}
-          <div className="flex-1 flex items-center justify-center gap-[3px] px-[1.8px] py-1 bg-gradient-to-r from-green-500/10 to-green-500/5 rounded-lg border border-green-500/30 h-8 min-w-0">
+          <div className="flex-1 flex items-center justify-center gap-[3px] px-[1.5px] py-1 bg-gradient-to-r from-green-500/10 to-green-500/5 rounded-md border border-green-500/30 h-8 min-w-0">
             <span className="text-[8px] text-sky-400 font-bold whitespace-nowrap animate-pulse">
               {countdown !== null ? `${countdown}s` : "--"}
             </span>
@@ -551,7 +551,7 @@ const BingoPageContent = () => {
             <div className="flex-1 min-h-0 ">
               {cards.length === 0 ? (
                 <div className="w-full flex flex-col items-center justify-start h-full">
-                  <div className="relative rounded-xl border-2 border-blue-500 bg-slate-900 px-2.5 py-2.5 shadow-2xl overflow-hidden">
+                  <div className="relative rounded-xl border-2 border-blue-900  px-2.5 py-2.5 shadow-2xl overflow-hidden">
                     <div className="grid grid-cols-5 mb-1.5 gap-[5px] justify-center opacity-70 blur-[0.75px]">
                       {BINGO_COLS.map(({ letter, headerBg }) => (
                         <div
@@ -577,16 +577,14 @@ const BingoPageContent = () => {
                     </div>
 
                     <div className="absolute inset-0 flex items-center justify-center px-4">
-                      <div className="max-w-[185px] rounded-xl border border-orange-500/30 bg-black/70 px-3 py-2 text-center backdrop-blur-sm shadow-[0_0_20px_rgba(0,0,0,0.35)]">
+                      <div className="max-w-[185px] rounded-lg border border-orange-500/30 bg-black/70 px-3 py-2 text-center backdrop-blur-sm shadow-[0_0_20px_rgba(0,0,0,0.35)]">
                         <div className="mb-1.5 text-[11px] font-semibold leading-tight text-orange-500">
                           watching only
-                          <br />
-                          ጨዋታው ተጀምሯል
                         </div>
-                        <div className="text-[8.5px] leading-snug text-orange-300/90">
-                          ይህን ዙር መቀላቀል አይቻልም።
+                        <div className="text-[8.5px] leading-snug text-slate-300/70">
+                          በዚህ ዙር ካርቴላ አልመርጡም።
                           <br />
-                          ቀጣዩን ዙር ይጠብቁ።
+                          ለቀጣይ ዙር ይምርጡ።
                         </div>
                       </div>
                     </div>
