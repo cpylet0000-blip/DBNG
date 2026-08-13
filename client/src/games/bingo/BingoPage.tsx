@@ -295,23 +295,70 @@ const BingoPageContent = () => {
   // Loading state
   if (gameState.view === "game" && gameState.session && !connected) {
     return (
-      <div className="h-[80vh] bg-slate-900/90 flex items-center justify-center ">
-        <div className="text-center">
-          <div className="text-yellow-400 text-2xl font-bold mb-4">
-            Connecting to Game...
+      <div className="h-[80vh] flex items-center justify-center px-4">
+        <div className="w-full max-w-sm text-center">
+          {/* Loading Indicator */}
+          <div className="mb-6 flex justify-center">
+            <div className="relative flex h-12 w-12 items-center justify-center rounded-full border border-slate-700 bg-slate-800/60">
+              <div className="absolute inset-1 rounded-full border-2 border-transparent border-t-blue-500 animate-spin" />
+
+              <div className="h-2 w-2 rounded-full bg-blue-500" />
+            </div>
           </div>
-          <div className="text-slate-400 mb-4">Please wait</div>
+
+          {/* Main Message */}
+          <h2 className="text-[17px] font-semibold tracking-wide text-slate-100">
+            Connecting to Game
+          </h2>
+
+          <p className="mt-2 text-sm text-slate-400">
+            Please wait while we connect you to the game.
+          </p>
+
+          {/* Timeout Message */}
           {showTimeoutMessage && (
-            <div className="text-orange-400 text-sm mt-4 p-4 bg-orange-900/20 rounded-lg border border-orange-700/30">
-              <div className="mb-2">
-                ⚠️ Connection is taking longer than expected
+            <div className="mt-7 border-t border-slate-800 pt-5">
+              <div className="flex items-start gap-3 rounded-lg border border-slate-700/80 bg-slate-800/40 px-4 py-3 text-left">
+                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-400">
+                  !
+                </div>
+
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-slate-200">
+                    Connection is taking longer than expected
+                  </p>
+
+                  <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                    Please refresh the page and try again.
+                  </p>
+
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="
+                mt-3
+                inline-flex
+                items-center
+                justify-center
+                rounded-md
+                border border-blue-500/40
+                bg-blue-500/10
+                px-4
+                py-2
+                text-xs
+                font-medium
+                text-blue-400
+                transition-all
+                duration-200
+                hover:border-blue-500/60
+                hover:bg-blue-500/15
+                hover:text-blue-300
+                active:scale-[0.98]
+              "
+                  >
+                    Refresh Page
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={() => window.location.reload()}
-                className="mt-3 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
-              >
-                Refresh Page
-              </button>
             </div>
           )}
         </div>
@@ -674,13 +721,17 @@ const BingoPageContent = () => {
   }
   // Default fallback
   return (
-    <div className="h-[80vh] bg-gradient-to-b from-slate-900 to-slate-800 flex items-center justify-center">
-      <div className="text-center">
-        <div className="text-yellow-400 text-2xl font-bold mb-4">
-          Loading...
-        </div>
-        <div className="text-slate-400">Please wait</div>
-      </div>
+    <div className="h-[80vh] flex items-center justify-center">
+      <div
+        className="
+      h-9 w-9
+      rounded-full
+      border-2
+      border-slate-700
+      border-t-blue-500
+      animate-spin
+    "
+      />
     </div>
   );
 };

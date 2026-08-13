@@ -432,7 +432,7 @@ export const BingoCard = ({
                         textColor = "text-black";
                       } else if (marked || (autoMark && called)) {
                         cellClass =
-                          "bg-emerald-500 border border-emerald-400 shadow-[0_0_4px_rgba(34,197,94,0.8)]";
+                          "bg-gradient-to-br from-orange-500 to-red-600 shadow-lg shadow-orange-500/30";
                         textColor = "text-white";
                       } else if (called) {
                         cellClass =
@@ -473,7 +473,7 @@ export const BingoCard = ({
                 {/* CARD INFO */}
                 <div className="flex relative justify-center items-center font-semibold -mt-2 text-[8px] text-slate-300 z-10 bg">
                   {/* <span>Cartela - </span> */}
-                  <span className="text-[10px] text-black font-bold bg-amber-300/90 w-4 h-4 flex items-center justify-center rounded-full">
+                  <span className="text-[10px] text-black font-bold bg-blue-600 w-4 h-4 flex items-center justify-center rounded-full">
                     {" "}
                     {card.id}
                   </span>
