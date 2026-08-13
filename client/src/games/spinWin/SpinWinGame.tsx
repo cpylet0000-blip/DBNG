@@ -1279,153 +1279,260 @@ const SpinWinGame: React.FC = () => {
           )}
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-black">
-          <div className="relative w-full border-t-2 border-emerald-900 bg-gray-950 text-white shadow-2xl">
-            <div className="h-16 px-2 sm:px-3 flex items-center justify-between gap-2">
-              <div className="h-12 px-1 rounded-md bg-sky-950/40 flex items-center border">
-                <div className="text-left leading-tight">
-                  <p className="text-base text-xs  rounded font-mono">
-                    {pendingSelections.length} Pending
-                  </p>
-                </div>
+        <div className="fixed bottom-0 left-0 right-0 z-40 flex flex-col-reverse">
+          <div
+            className="w-full"
+            style={{ backgroundColor: "#d2e5b3", color: "#000000" }}
+          >
+            {/* Main Bar */}
+            <div className="h-16 px-2 sm:px-3 flex items-center justify-between gap-2 bg-gradient-to-r from-[#181818] via-[#202020] to-[#181818] text-white border-t border-white/5 shadow-[0_-4px_20px_rgba(0,0,0,0.25)]">
+              {/* LEFT — Pending */}
+              <div className="flex items-center gap-2.5 shrink-0">
+                <span className="text-[10px] uppercase tracking-[0.18em] font-bold text-white/50">
+                  Pending
+                </span>
+
+                <span
+                  className={`min-w-8 h-7 px-2 flex items-center justify-center rounded-md
+        text-xs font-mono font-bold border transition-all
+        ${
+          pendingSelections.length > 0
+            ? "bg-[#AA997D]/15 text-[#AA997D] border-[#AA997D]/30"
+            : "bg-white/5 text-white/40 border-white/5"
+        }`}
+                >
+                  {pendingSelections.length}
+                </span>
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* RIGHT CONTROLS */}
+              <div className="flex items-center gap-[7px] sm:gap-[10px]">
+                {/* Place Bet */}
                 <button
                   onClick={acceptPendingBets}
                   disabled={isSpinning || pendingSelections.length === 0}
-                  className={
-                    `h-11 sm:h-13 px-6 rounded-md bg-emerald-600 hover:bg-emerald-600 disabled:cursor-not-allowed text-white flex items-center justify-center gap-2 transition-all duration-300 ` +
-                    (pendingSelections.length > 0 && !isSpinning
-                      ? " animate-pulse ring-2 ring-amber-400 ring-offset-2"
-                      : "")
-                  }
+                  className={`
+        h-9 px-4 sm:px-5 rounded-md
+        text-[10px] uppercase tracking-[0.15em] font-extrabold
+        transition-all duration-200
+        border
+        ${
+          pendingSelections.length > 0 && !isSpinning
+            ? "bg-[#b1a593] text-[#0a0a0a] border-[#AA997D] hover:bg-[#b9a98e] hover:shadow-[0_0_18px_rgba(170,153,125,0.2)] active:scale-95"
+            : "bg-white/5 text-white/25 border-white/5 cursor-not-allowed"
+        }
+      `}
                   title="Accept selected bets"
                   aria-label="Accept selected bets"
                 >
-                  <span className="text-sm sm:text-base font-semibold border-gray-200 px-3 rounded">
-                    Bet
-                  </span>
+                  Place Bet
                 </button>
 
+                {/* Divider */}
+                <div className="hidden sm:block w-px h-7 bg-white/10" />
+
+                {/* Back */}
                 <button
                   type="button"
                   onClick={() => navigate("/games")}
-                  className="h-11 sm:h-12 px-2 rounded-md bg-emerald-950/45 hover:bg-emerald-950/70 border border-emerald-800 text-slate-200 flex items-center justify-center gap-1 transition-colors"
+                  className="
+        h-9 px-2.5 rounded-md
+        text-white/50 hover:text-white hover:bg-white/5
+        transition-all duration-200
+        flex items-center gap-1.5
+      "
                   title="Back to games"
                   aria-label="Back to games"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline text-[11px] sm:text-xs font-medium">
+                  <ArrowLeft className="w-4 h-4" />
+
+                  <span className="hidden sm:inline text-[10px] uppercase tracking-[0.15em] font-bold">
                     Back
                   </span>
                 </button>
 
-                <div className="h-12 px-2 rounded-md bg-emerald-950/45 text-slate-100 flex items-center gap-1 border">
+                {/* Divider */}
+                <div className="w-px h-7 bg-white/10" />
+
+                {/* Chip Controls */}
+                <div className="flex items-center gap-[2px] bg-black/20 border border-white/5 rounded-lg p-1">
+                  {/* Minus */}
                   <button
                     type="button"
                     onClick={decreaseChip}
                     disabled={selectedChipIndex <= 0}
-                    className="w-8 h-8 rounded bg-emerald-900/70 hover:bg-emerald-900 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
+                    className="
+          w-7 h-7 rounded-md
+          flex items-center justify-center
+          text-white/50
+          bg-white/5 hover:bg-white/10 hover:text-white
+          disabled:opacity-20 disabled:cursor-not-allowed
+          transition-all duration-200
+        "
                     aria-label="Decrease stake"
                   >
-                    <Minus className="w-4 h-4" />
+                    <Minus className="w-3.5 h-3.5" />
                   </button>
 
-                  <span className="min-w-10 text-center text-base sm:text-lg font-bold leading-none">
-                    {selectedChip}
-                  </span>
+                  {/* Selected Chip */}
+                  <div className="min-w-12 px-1 text-center">
+                    <span className="font-mono text-sm font-bold text-[#AA997D]">
+                      {selectedChip}
+                    </span>
+                  </div>
 
+                  {/* Plus */}
                   <button
                     type="button"
                     onClick={increaseChip}
                     disabled={selectedChipIndex >= chipValues.length - 1}
-                    className="w-8 h-8 rounded bg-emerald-900/70 hover:bg-emerald-900 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
+                    className="
+          w-7 h-7 rounded-md
+          flex items-center justify-center
+          text-white/50
+          bg-white/5 hover:bg-white/10 hover:text-white
+          disabled:opacity-20 disabled:cursor-not-allowed
+          transition-all duration-200
+        "
                     aria-label="Increase stake"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
             </div>
 
-            <div>
-              <div className="max-h-48 overflow-y-auto px-3 pb-3">
-                {pendingSelections.length === 0 &&
-                ticketedBets.length === 0 ? null : (
-                  <div className="space-y-2">
-                    {pendingSelections.length > 0 && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wide text-emerald-200/90 mb-1">
-                          Pending Bets
-                        </p>
+            {/* Receipt Section - Only shows when there are bets */}
+            {(pendingSelections.length > 0 || ticketedBets.length > 0) && (
+              <div className="border-t border-black/10">
+                <div className="max-h-48 overflow-y-auto px-4 py-3 space-y-3 scrollbar-thin scrollbar-thumb-black/20 scrollbar-track-transparent">
+                  {pendingSelections.length === 0 &&
+                  ticketedBets.length === 0 ? null : (
+                    <>
+                      {/* Pending Bets */}
+                      {pendingSelections.length > 0 && (
                         <div className="space-y-1">
+                          <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest font-bold text-black/60">
+                            <span>Pending Bets</span>
+                            <div className="flex-1 border-b border-black/10"></div>
+                            <span>{pendingSelections.length}</span>
+                          </div>
+
                           {pendingSelections.map((bet, index) => (
                             <div
                               key={`pending-${index}`}
-                              className="grid grid-cols-4 gap-2 text-xs border-b border-emerald-900 pb-1"
+                              className="
+                    flex
+                    items-center
+                    gap-2
+                    text-sm
+                    font-mono
+                    py-1
+                    border-b border-black/5
+                    last:border-0
+                  "
                             >
-                              <span>{bet.amount.toFixed(2)}</span>
-                              <span className="truncate">
-                                {bet.type === "exact"
-                                  ? `#${bet.value}`
-                                  : bet.value}
+                              {/* Amount - Fixed Left */}
+                              <span className="font-bold whitespace-nowrap text-black/80 min-w-[60px]">
+                                {bet.amount.toFixed(2)}
                               </span>
-                              <span>{bet.odds}</span>
-                              <span>{(bet.amount * bet.odds).toFixed(2)}</span>
+
+                              {/* Selected Numbers - Expands and pushes right */}
+                              <span className="ml-3 text-black/70 text-left break-words leading-relaxed flex-1">
+                                {bet.type === "exact" ? bet.value : bet.value}
+                              </span>
+
+                              {/* Odds + Return - Fixed Right */}
+                              <div className="flex items-center gap-3 whitespace-nowrap">
+                                <span className="text-black/40 text-xs">
+                                  ×{bet.odds}
+                                </span>
+                                <span className="font-bold text-right min-w-[65px] text-black/90">
+                                  {(bet.amount * bet.odds).toFixed(2)}
+                                </span>
+                              </div>
                             </div>
                           ))}
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {ticketedBets.length > 0 && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wide text-emerald-200/90 mb-1">
-                          Ticketed Bets
-                        </p>
+                      {/* Ticketed Bets */}
+                      {ticketedBets.length > 0 && (
                         <div className="space-y-1">
+                          <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest font-bold text-black/60">
+                            <span>Ticketed Bets</span>
+                            <div className="flex-1 border-b border-black/10"></div>
+                            <span>{ticketedBets.length}</span>
+                          </div>
+
                           {ticketedBets.map((bet, index) => (
                             <div
                               key={`ticketed-${index}`}
-                              className="grid grid-cols-4 gap-2 text-xs border-b border-emerald-900 pb-1"
+                              className="
+                    flex
+                    items-center
+                    gap-2
+                    text-sm
+                    font-mono
+                    py-1
+                    border-b border-black/5
+                    last:border-0
+                  "
                             >
-                              <span>{bet.amount.toFixed(2)}</span>
-                              <span className="truncate">
-                                {bet.type === "exact"
-                                  ? `#${bet.value}`
-                                  : bet.value}
+                              {/* Amount - Fixed Left */}
+                              <span className="font-bold whitespace-nowrap text-black/80 min-w-[60px]">
+                                {bet.amount.toFixed(2)}
                               </span>
-                              <span>{bet.odds}</span>
-                              <span>{(bet.amount * bet.odds).toFixed(2)}</span>
+
+                              {/* Selected Numbers - Expands and pushes right */}
+                              <span className="ml-3 text-black/70 text-left break-words leading-relaxed flex-1">
+                                {bet.type === "exact" ? bet.value : bet.value}
+                              </span>
+
+                              {/* Odds + Return - Fixed Right */}
+                              <div className="flex items-center gap-3 whitespace-nowrap">
+                                <span className="text-black/40 text-xs">
+                                  ×{bet.odds}
+                                </span>
+                                <span className="font-bold text-right min-w-[65px] text-black/90">
+                                  {(bet.amount * bet.odds).toFixed(2)}
+                                </span>
+                              </div>
                             </div>
                           ))}
                         </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Totals */}
+                  <div className="pt-2 space-y-1 border-t border-black/10">
+                    {pendingSelections.length > 0 && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-black/60 uppercase tracking-wider font-bold">
+                          Pending Return
+                        </span>
+                        <span className="font-mono font-bold">
+                          ETB {pendingPotentialReturn.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                    {ticketedBets.length > 0 && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-black/60 uppercase tracking-wider font-bold">
+                          Ticketed Return
+                        </span>
+                        <span className="font-mono font-bold">
+                          ETB {ticketedPotentialReturn.toFixed(2)}
+                        </span>
                       </div>
                     )}
                   </div>
-                )}
-                {pendingSelections.length > 0 && (
-                  <div className="mt-2 text-xs text-emerald-100 flex justify-between">
-                    <span>Pending Return</span>
-                    <span className="font-bold">
-                      ETB{pendingPotentialReturn.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                {ticketedBets.length > 0 && (
-                  <div className="mt-1 text-xs text-emerald-100/90 flex justify-between">
-                    <span>Ticketed Return</span>
-                    <span className="font-bold">
-                      ETB{ticketedPotentialReturn.toFixed(2)}
-                    </span>
-                  </div>
-                )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
-
         <AnimatePresence>
           {showHowItWorks && (
             <motion.div
