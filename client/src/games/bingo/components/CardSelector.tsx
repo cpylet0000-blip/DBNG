@@ -270,9 +270,9 @@ export const CardSelector = ({
         void refreshProfile();
         if (triggerStakeRefresh) void triggerStakeRefresh();
         // Optimistically join immediately after confirming a card to reduce delay
-        setIsJoiningGame(true);
-        if (onGoToGame) onGoToGame();
-        else onSelectCard([confirmedCardId]);
+        // setIsJoiningGame(true);
+        // if (onGoToGame) onGoToGame();
+        // else onSelectCard([confirmedCardId]);
       } else {
         alert("Selected by another player, choose a different card");
       }
