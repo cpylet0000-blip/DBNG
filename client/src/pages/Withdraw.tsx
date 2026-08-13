@@ -15,7 +15,9 @@ import {
 const Withdraw = () => {
   const { profile } = useProfile();
 
-  const [method, setMethod] = useState<"Telebirr" | "CBE" | "BOA">("Telebirr");
+  const [method, setMethod] = useState<"Telebirr" | "Ebirr" | "CBEbirr">(
+    "Telebirr",
+  );
   const [input, setInput] = useState("");
   const [amount, setAmount] = useState("");
   const [requesting, setRequesting] = useState(false);
@@ -184,7 +186,7 @@ const Withdraw = () => {
 
                 let img = "/CBEbirr.png";
                 if (key.includes("tele")) img = "/Telebirr.png";
-                else if (key.includes("Ebirr")) img = "/Ebirr.png";
+                else if (key.includes("ebirr")) img = "/Ebirr.png";
 
                 return (
                   <button
