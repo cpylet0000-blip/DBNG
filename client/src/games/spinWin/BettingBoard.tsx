@@ -1,48 +1,59 @@
-import React from 'react'
+import React from "react";
 
 interface BettingBoardProps {
-  placeBet: (type: string, value: string | number, odds: number) => void
-  currentBet: number
+  placeBet: (type: string, value: string | number, odds: number) => void;
+  currentBet: number;
   bets: Array<{
-    type: string
-    value: string | number
-    amount: number
-  }>
+    type: string;
+    value: string | number;
+    amount: number;
+  }>;
 }
 
-const BettingBoard: React.FC<BettingBoardProps> = ({ placeBet, currentBet, bets }) => {
-  const RED_NUMBERS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]
-  const sectors = ['A', 'B', 'C', 'D', 'E', 'F']
+const BettingBoard: React.FC<BettingBoardProps> = ({
+  placeBet,
+  currentBet,
+  bets,
+}) => {
+  const RED_NUMBERS = [
+    1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36,
+  ];
+  const sectors = ["A", "B", "C", "D", "E", "F"];
   const exactNumbers = Array.from({ length: 6 }, (_, rowIndex) =>
-    Array.from({ length: 6 }, (_, columnIndex) => rowIndex + 1 + columnIndex * 6)
-  ).flat()
+    Array.from(
+      { length: 6 },
+      (_, columnIndex) => rowIndex + 1 + columnIndex * 6,
+    ),
+  ).flat();
   const gameButtonClass =
-    'h-8 sm:h-9 rounded bg-emerald-800 hover:bg-emerald-900 text-white text-[11px] sm:text-xs font-semibold transition-colors border border-white/80'
+    "h-8 sm:h-9 rounded bg-emerald-800 hover:bg-emerald-900 text-white text-[11px] sm:text-xs font-semibold transition-colors border border-white/80";
 
   const getBetAmount = (type: string, value: string | number) => {
-    if (type === 'exact') {
-      const exactBet = bets.find((bet) => bet.type === 'exact')
-      if (!exactBet) return 0
+    if (type === "exact") {
+      const exactBet = bets.find((bet) => bet.type === "exact");
+      if (!exactBet) return 0;
 
       const selectedNumbers = String(exactBet.value)
-        .split(',')
+        .split(",")
         .map((entry) => Number(entry.trim()))
-        .filter((entry) => Number.isInteger(entry))
+        .filter((entry) => Number.isInteger(entry));
 
-      return selectedNumbers.includes(Number(value)) ? exactBet.amount : 0
+      return selectedNumbers.includes(Number(value)) ? exactBet.amount : 0;
     }
 
-    const activeBet = bets.find((bet) => bet.type === type && String(bet.value) === String(value))
-    return activeBet?.amount ?? 0
-  }
+    const activeBet = bets.find(
+      (bet) => bet.type === type && String(bet.value) === String(value),
+    );
+    return activeBet?.amount ?? 0;
+  };
 
   const getButtonClass = (baseClass: string, isActive: boolean) => {
-    if (!isActive) return baseClass
-    return `${baseClass} relative ring-2 ring-amber-300 shadow-[0_0_16px_rgba(252,211,77,0.6)] animate-pulse`
-  }
+    if (!isActive) return baseClass;
+    return `${baseClass} relative ring-2 ring-amber-300 shadow-[0_0_16px_rgba(252,211,77,0.6)] animate-pulse`;
+  };
 
   const renderBetOverlay = (amount: number) => {
-    if (amount <= 0) return null
+    if (amount <= 0) return null;
 
     return (
       <>
@@ -51,177 +62,401 @@ const BettingBoard: React.FC<BettingBoardProps> = ({ placeBet, currentBet, bets 
           {amount}
         </span>
       </>
-    )
-  }
+    );
+  };
 
   return (
-    <div className="bg-sky-950 pb-3">
-      <div className="px-1 pt-1 mb-2">
-        <div className="mb-1">
+    <div className="bg-slate-900 pb-3">
+      {/* ================= NUMBER BOARD ================= */}
+      <div className="px-1 pt-1.5 mb-2.5">
+        {/* Zero */}
+        <div className="mb-1.5">
           {(() => {
-            const zeroAmount = getBetAmount('exact', 0)
-            const zeroActive = zeroAmount > 0
+            const zeroAmount = getBetAmount("exact", 0);
+            const zeroActive = zeroAmount > 0;
+
             return (
               <button
-                onClick={() => placeBet('exact', 0, 36)}
+                onClick={() => placeBet("exact", 0, 36)}
                 className={getButtonClass(
-                  'w-full h-8 sm:h-9 rounded text-sm font-semibold transition-colors overflow-hidden bg-emerald-600 hover:bg-emerald-700 text-white',
-                  zeroActive
+                  `
+                relative
+                w-full
+                h-8 sm:h-9
+                rounded-md
+                border border-emerald-700/50
+                bg-emerald-700
+                hover:bg-emerald-600
+                text-sm
+                font-semibold
+                text-white
+                transition-all
+                duration-150
+                overflow-hidden
+                active:scale-[0.98]
+              `,
+                  zeroActive,
                 )}
               >
                 {renderBetOverlay(zeroAmount)}
                 <span className="relative z-10">0</span>
               </button>
-            )
+            );
           })()}
         </div>
+
+        {/* Numbers */}
         <div className="grid grid-cols-6 gap-1">
           {exactNumbers.map((num) => {
-            const amount = getBetAmount('exact', num)
-            const isActive = amount > 0
+            const amount = getBetAmount("exact", num);
+            const isActive = amount > 0;
 
             return (
               <button
                 key={num}
-                onClick={() => placeBet('exact', num, 36)}
+                onClick={() => placeBet("exact", num, 36)}
                 className={getButtonClass(
-                  `h-8 sm:h-9 rounded text-[13px] font-bold transition-colors overflow-hidden ${RED_NUMBERS.includes(num)
-                    ? 'bg-red-800 hover:bg-red-800 text-white'
-                    : 'bg-black hover:bg-slate-800 text-white'
-                  }`,
-                  isActive
+                  `
+                h-8 sm:h-9
+                rounded-md
+                border
+                text-[13px]
+                font-semibold
+                transition-all
+                duration-150
+                overflow-hidden
+                active:scale-[0.96]
+                ${
+                  RED_NUMBERS.includes(num)
+                    ? `
+                      bg-[#a52a2a]
+                      border-[#c14a4a]
+                      hover:bg-[#b63232]
+                      text-white
+                    `
+                    : `
+                      bg-[#171a1f]
+                      border-slate-700
+                      hover:bg-slate-700
+                      text-white
+                    `
+                }
+              `,
+                  isActive,
                 )}
               >
                 {renderBetOverlay(amount)}
                 <span className="relative z-10">{num}</span>
               </button>
-            )
+            );
           })}
         </div>
       </div>
-      <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-emerald-100 mb-0.5 px-1 text-center ">Sector</div>
-      <div className="grid grid-cols-6 gap-1 mb-2 px-1">
-        {sectors.map((sector) => {
-          const amount = getBetAmount('sector', sector)
-          return (
-            <button
-              key={sector}
-              onClick={() => placeBet('sector', sector, 6)}
-              className={getButtonClass(`${gameButtonClass} overflow-hidden`, amount > 0)}
-            >
-              {renderBetOverlay(amount)}
-              <span className="relative z-10">{sector}</span>
-            </button>
-          )
-        })}
-      </div>
-      <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-emerald-100 mb-0.5 px-1 text-center">DOZENS</div>
-      <div className="grid grid-cols-3 gap-1.5 mb-2 px-1 ">
 
-        {[
-          { type: 'dozen1', value: '1-12', label: '1~12' },
-          { type: 'dozen2', value: '13-24', label: '13~24' },
-          { type: 'dozen3', value: '25-36', label: '25~36' }
-        ].map((item) => {
-          const amount = getBetAmount(item.type, item.value)
-          return (
-            <button
-              key={item.type}
-              onClick={() => placeBet(item.type, item.value, 3)}
-              className={getButtonClass(`${gameButtonClass} overflow-hidden`, amount > 0)}
-            >
-              {renderBetOverlay(amount)}
-              <span className="relative z-10">{item.label}</span>
-            </button>
-          )
-        })}
-      </div>
-      <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-emerald-100 mb-0.5 px-1 text-center">EVEN/ODD</div>
-      <div className="grid grid-cols-2 gap-1.5 mb-2 px-1">
-        {[
-          { type: 'even', value: 'EVEN', label: 'EVEN' },
-          { type: 'odd', value: 'ODD', label: 'ODD' }
-        ].map((item) => {
-          const amount = getBetAmount(item.type, item.value)
-          return (
-            <button
-              key={item.type}
-              onClick={() => placeBet(item.type, item.value, 2)}
-              className={getButtonClass(
-                'h-8 sm:h-9 rounded border border-white/80 text-emerald-100 text-xs font-semibold transition-colors hover:bg-emerald-800/40 overflow-hidden',
-                amount > 0
-              )}
-            >
-              {renderBetOverlay(amount)}
-              <span className="relative z-10">{item.label}</span>
-            </button>
-          )
-        })}
+      {/* ================= SECTOR ================= */}
+      <div className="mb-2.5">
+        <div className="mb-1 flex items-center gap-2 px-2">
+          <span className="h-px flex-1 bg-slate-800" />
+
+          <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-blue-400">
+            Sector
+          </span>
+
+          <span className="h-px flex-1 bg-slate-800" />
+        </div>
+
+        <div className="grid grid-cols-6 gap-1 px-1">
+          {sectors.map((sector) => {
+            const amount = getBetAmount("sector", sector);
+
+            return (
+              <button
+                key={sector}
+                onClick={() => placeBet("sector", sector, 6)}
+                className={getButtonClass(
+                  `
+                ${gameButtonClass}
+                overflow-hidden
+                rounded-md
+                border border-slate-700
+                text-[11px]
+                font-medium
+                transition-all
+                duration-150
+                active:scale-[0.97]
+              `,
+                  amount > 0,
+                )}
+              >
+                {renderBetOverlay(amount)}
+                <span className="relative z-10">{sector}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-emerald-100 mb-0.5 px-1 text-center">COLORS</div>
-      <div className="grid grid-cols-3 gap-1.5 mb-2 px-1">
-        {[
-          { type: 'red', value: 'RED', label: 'Red', className: 'h-8 sm:h-9 rounded bg-red-700 hover:bg-red-800 text-white text-xs font-semibold transition-colors overflow-hidden' },
-          { type: 'black', value: 'BLACK', label: 'Black', className: 'h-8 sm:h-9 rounded bg-black hover:bg-slate-800 text-white text-xs font-semibold transition-colors overflow-hidden' },
-          { type: 'green', value: 'GREEN', label: 'Green', className: 'h-8 sm:h-9 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors overflow-hidden' }
-        ].map((item) => {
-          const amount = getBetAmount(item.type, item.value)
-          return (
-            <button
-              key={item.type}
-              onClick={() => placeBet(item.type, item.value, item.type === 'green' ? 36 : 2)}
-              className={getButtonClass(item.className, amount > 0)}
-            >
-              {renderBetOverlay(amount)}
-              <span className="relative z-10">{item.label}</span>
-            </button>
-          )
-        })}
-      </div>
-      <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-emerald-100 mb-0.5 px-1 text-center">LOW/HIGH</div>
-      <div className="grid grid-cols-2 gap-1.5 mb-2 px-1">
-        {[
-          { type: 'low', value: '1-18', label: '1-18' },
-          { type: 'high', value: '19-36', label: '19-36' }
-        ].map((item) => {
-          const amount = getBetAmount(item.type, item.value)
-          return (
-            <button
-              key={item.type}
-              onClick={() => placeBet(item.type, item.value, 2)}
-              className={getButtonClass(`${gameButtonClass} overflow-hidden`, amount > 0)}
-            >
-              {renderBetOverlay(amount)}
-              <span className="relative z-10">{item.label}</span>
-            </button>
-          )
-        })}
+      {/* ================= DOZENS ================= */}
+      <div className="mb-2.5">
+        <div className="mb-1 flex items-center gap-2 px-2">
+          <span className="h-px flex-1 bg-slate-800" />
+
+          <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-blue-400">
+            Dozens
+          </span>
+
+          <span className="h-px flex-1 bg-slate-800" />
+        </div>
+
+        <div className="grid grid-cols-3 gap-1.5 px-1">
+          {[
+            { type: "dozen1", value: "1-12", label: "1~12" },
+            { type: "dozen2", value: "13-24", label: "13~24" },
+            { type: "dozen3", value: "25-36", label: "25~36" },
+          ].map((item) => {
+            const amount = getBetAmount(item.type, item.value);
+
+            return (
+              <button
+                key={item.type}
+                onClick={() => placeBet(item.type, item.value, 3)}
+                className={getButtonClass(
+                  `
+                ${gameButtonClass}
+                overflow-hidden
+                rounded-md
+                border border-slate-700
+                text-xs
+                font-medium
+                transition-all
+                duration-150
+                active:scale-[0.98]
+              `,
+                  amount > 0,
+                )}
+              >
+                {renderBetOverlay(amount)}
+                <span className="relative z-10">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="text-[9px] sm:text-[10px] uppercase tracking-wide text-emerald-100 mb-0.5 px-1 text-center">Extra Bet</div>
-      <div className="grid grid-cols-4 gap-1.5 mb-2 px-1 max-w-4xl mx-auto ">
-        {[
-          { type: 'low-red', value: '1-18 (Red)', label: '1-18', className: 'h-8 sm:h-9 rounded bg-red-700 hover:bg-red-800 text-white text-[10px] font-semibold transition-colors overflow-hidden' },
-          { type: 'high-red', value: '19-36 (Red)', label: '19-36', className: 'h-8 sm:h-9 rounded bg-red-700 hover:bg-red-800 text-white text-[10px] font-semibold transition-colors overflow-hidden' },
-          { type: 'low-black', value: '1-18 (Black)', label: '1-18', className: 'h-8 sm:h-9 rounded bg-black hover:bg-slate-800 text-white text-[10px] font-semibold transition-colors overflow-hidden' },
-          { type: 'high-black', value: '19-36 (Black)', label: '19-36', className: 'h-8 sm:h-9 rounded bg-black hover:bg-slate-800 text-white text-[10px] font-semibold transition-colors overflow-hidden' }
-        ].map((item) => {
-          const amount = getBetAmount(item.type, item.value)
-          return (
-            <button
-              key={item.type}
-              onClick={() => placeBet(item.type, item.value, 4)}
-              className={getButtonClass(item.className, amount > 0)}
-            >
-              {renderBetOverlay(amount)}
-              <span className="relative z-10">{item.label}</span>
-            </button>
-          )
-        })}
+      {/* ================= EVEN / ODD ================= */}
+      <div className="mb-2.5">
+        <div className="mb-1 flex items-center gap-2 px-2">
+          <span className="h-px flex-1 bg-slate-800" />
+
+          <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-blue-400">
+            Even / Odd
+          </span>
+
+          <span className="h-px flex-1 bg-slate-800" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-1.5 px-1">
+          {[
+            { type: "even", value: "EVEN", label: "EVEN" },
+            { type: "odd", value: "ODD", label: "ODD" },
+          ].map((item) => {
+            const amount = getBetAmount(item.type, item.value);
+
+            return (
+              <button
+                key={item.type}
+                onClick={() => placeBet(item.type, item.value, 2)}
+                className={getButtonClass(
+                  `
+                h-8 sm:h-9
+                rounded-md
+                border border-slate-700
+                bg-slate-800/60
+                text-slate-200
+                text-xs
+                font-semibold
+                transition-all
+                duration-150
+                hover:bg-slate-700
+                hover:border-slate-600
+                overflow-hidden
+                active:scale-[0.98]
+              `,
+                  amount > 0,
+                )}
+              >
+                {renderBetOverlay(amount)}
+                <span className="relative z-10">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ================= COLORS ================= */}
+      <div className="mb-2.5">
+        <div className="mb-1 flex items-center gap-2 px-2">
+          <span className="h-px flex-1 bg-slate-800" />
+
+          <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-blue-400">
+            Colors
+          </span>
+
+          <span className="h-px flex-1 bg-slate-800" />
+        </div>
+
+        <div className="grid grid-cols-3 gap-1.5 px-1">
+          {[
+            {
+              type: "red",
+              value: "RED",
+              label: "Red",
+              className:
+                "h-8 sm:h-9 rounded-md bg-[#a52a2a] hover:bg-[#b63232] border border-[#c14a4a] text-white text-xs font-semibold transition-all duration-150 overflow-hidden active:scale-[0.98]",
+            },
+            {
+              type: "black",
+              value: "BLACK",
+              label: "Black",
+              className:
+                "h-8 sm:h-9 rounded-md bg-[#171a1f] hover:bg-slate-700 border border-slate-700 text-white text-xs font-semibold transition-all duration-150 overflow-hidden active:scale-[0.98]",
+            },
+            {
+              type: "green",
+              value: "GREEN",
+              label: "Green",
+              className:
+                "h-8 sm:h-9 rounded-md bg-emerald-700 hover:bg-emerald-600 border border-emerald-600 text-white text-xs font-semibold transition-all duration-150 overflow-hidden active:scale-[0.98]",
+            },
+          ].map((item) => {
+            const amount = getBetAmount(item.type, item.value);
+
+            return (
+              <button
+                key={item.type}
+                onClick={() =>
+                  placeBet(
+                    item.type,
+                    item.value,
+                    item.type === "green" ? 36 : 2,
+                  )
+                }
+                className={getButtonClass(item.className, amount > 0)}
+              >
+                {renderBetOverlay(amount)}
+                <span className="relative z-10">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ================= LOW / HIGH ================= */}
+      <div className="mb-2.5">
+        <div className="mb-1 flex items-center gap-2 px-2">
+          <span className="h-px flex-1 bg-slate-800" />
+
+          <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-blue-400">
+            Low / High
+          </span>
+
+          <span className="h-px flex-1 bg-slate-800" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-1.5 px-1">
+          {[
+            { type: "low", value: "1-18", label: "1-18" },
+            { type: "high", value: "19-36", label: "19-36" },
+          ].map((item) => {
+            const amount = getBetAmount(item.type, item.value);
+
+            return (
+              <button
+                key={item.type}
+                onClick={() => placeBet(item.type, item.value, 2)}
+                className={getButtonClass(
+                  `
+                ${gameButtonClass}
+                overflow-hidden
+                rounded-md
+                border border-slate-700
+                text-xs
+                font-medium
+                transition-all
+                duration-150
+                active:scale-[0.98]
+              `,
+                  amount > 0,
+                )}
+              >
+                {renderBetOverlay(amount)}
+                <span className="relative z-10">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ================= EXTRA BET ================= */}
+      <div>
+        <div className="mb-1 flex items-center gap-2 px-2">
+          <span className="h-px flex-1 bg-slate-800" />
+
+          <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-blue-400">
+            Extra Bet
+          </span>
+
+          <span className="h-px flex-1 bg-slate-800" />
+        </div>
+
+        <div className="grid grid-cols-4 gap-1.5 px-1">
+          {[
+            {
+              type: "low-red",
+              value: "1-18 (Red)",
+              label: "1-18",
+              className:
+                "h-8 sm:h-9 rounded-md bg-[#a52a2a] hover:bg-[#b63232] border border-[#c14a4a] text-white text-[10px] font-semibold transition-all duration-150 overflow-hidden active:scale-[0.98]",
+            },
+            {
+              type: "high-red",
+              value: "19-36 (Red)",
+              label: "19-36",
+              className:
+                "h-8 sm:h-9 rounded-md bg-[#a52a2a] hover:bg-[#b63232] border border-[#c14a4a] text-white text-[10px] font-semibold transition-all duration-150 overflow-hidden active:scale-[0.98]",
+            },
+            {
+              type: "low-black",
+              value: "1-18 (Black)",
+              label: "1-18",
+              className:
+                "h-8 sm:h-9 rounded-md bg-[#171a1f] hover:bg-slate-700 border border-slate-700 text-white text-[10px] font-semibold transition-all duration-150 overflow-hidden active:scale-[0.98]",
+            },
+            {
+              type: "high-black",
+              value: "19-36 (Black)",
+              label: "19-36",
+              className:
+                "h-8 sm:h-9 rounded-md bg-[#171a1f] hover:bg-slate-700 border border-slate-700 text-white text-[10px] font-semibold transition-all duration-150 overflow-hidden active:scale-[0.98]",
+            },
+          ].map((item) => {
+            const amount = getBetAmount(item.type, item.value);
+
+            return (
+              <button
+                key={item.type}
+                onClick={() => placeBet(item.type, item.value, 4)}
+                className={getButtonClass(item.className, amount > 0)}
+              >
+                {renderBetOverlay(amount)}
+                <span className="relative z-10">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 export default BettingBoard;
