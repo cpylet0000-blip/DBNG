@@ -72,6 +72,7 @@ model DepositRequest {
   paymentDateTime String?  // Date and time from PDF
   receiver        String?  // Receiver name from PDF
   account         String?  // Account from PDF
+  methodInfo      String?  // Payment method info (e.g., "CBEBirr:https://...", "Telebirr:https://...")
   status          String   @default("pending") // pending, approved, rejected
   createdAt       DateTime @default(now())
 

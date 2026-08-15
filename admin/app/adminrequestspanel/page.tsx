@@ -386,33 +386,44 @@ function AdminRequestsPanel({ backendUrl }: AdminRequestsPanelProps) {
                                   minute: '2-digit'
                                 })}
                               </div>
-                              {/* Receipt Link for Telebirr or BOA by transactionId */}
+                              {/* Receipt Link - uses methodInfo for reliable payment method detection */}
                               {(() => {
-                                // Try to extract transactionId from req (commonly req.transactionId or req.tx or similar)
                                 const txId = req.transactionId || null;
-                                if (!txId || typeof txId !== 'string') return null;
-                                // Telebirr: 8-15 chars, not starting with FT; BOA: FT + 16+ chars
-                                let receiptUrl = null;
-                                const phone= process.env.NEXT_PUBLIC_CBE_BIRR_ACCOUNT;
-                                if (/^FT[A-Z0-9]{14,}$/i.test(txId)) {
-                                  // BOA (Abyssinia)
-                                  receiptUrl = `https://cs.bankofabyssinia.com/slip/?trx=${txId}`;
-                                }  else if(req.account==phone) {
-                                 receiptUrl= `https://cbepay1.cbe.com.et/aureceipt?TID=${txId}&PH=${phone}`;
-                                }
+                                const methodInfo = req.methodInfo || "";
                                 
-                                else if (/^[A-Z0-9]{8,15}$/i.test(txId)) {
-                                  // Telebirr
+                                if (!txId || typeof txId !== "string") return null;
+                                
+                                let receiptUrl = null;
+                                let paymentMethod = "";
+                                
+                                // 1️⃣ Extract payment method from methodInfo (most reliable)
+                                if (methodInfo.includes("CBEBirr:")) {
+                                  paymentMethod = "CBEBirr";
+                                  receiptUrl = methodInfo.replace(/^CBEBirr:/, "");
+                                } else if (methodInfo.includes("Telebirr:")) {
+                                  paymentMethod = "Telebirr";
+                                  receiptUrl = methodInfo.replace(/^Telebirr:/, "");
+                                } else if (methodInfo.includes("Ebirr:")) {
+                                  paymentMethod = "Ebirr";
+                                  receiptUrl = methodInfo.replace(/^Ebirr:/, "");
+                                } else if (/^FT[A-Z0-9]{14,}$/i.test(txId)) {
+                                  // 2️⃣ Fallback: BOA (Abyssinia): FT + 16+ chars
+                                  paymentMethod = "BOA";
+                                  receiptUrl = `https://cs.bankofabyssinia.com/slip/?trx=${txId}`;
+                                } else if (/^[A-Z0-9]{8,15}$/i.test(txId)) {
+                                  // 3️⃣ Fallback: Telebirr (for old deposits)
+                                  paymentMethod = "Telebirr";
                                   receiptUrl = `https://transactioninfo.ethiotelecom.et/receipt/${txId}`;
                                 }
+                                
                                 return receiptUrl ? (
                                   <a
                                     href={receiptUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-blue-600 underline text-xs font-semibold mt-1 inline-block"
+                                    className="text-blue-600 underline text-xs font-semibold mt-1 inline-block hover:text-blue-700"
                                   >
-                                    View Receipt {txId}
+                                    View Receipt {txId} ({paymentMethod})
                                   </a>
                                 ) : null;
                               })()}

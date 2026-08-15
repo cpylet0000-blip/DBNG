@@ -283,17 +283,26 @@ const Deposit = () => {
     try {
       let endpoint = `${BACKEND_URL}/depositer`;
       let txId = resolvedTransactionId;
-      // eslint-disable-next-line prefer-const
       let body: any = { userId: profile?.id };
-      if (isTelebirr) {
+
+      // 1️⃣ Detect payment method from SMS content first
+      const detectedMethod = detectPaymentMethodFromSMS(smsText);
+      const methodToUse = detectedMethod || (selectedMethod?.name ?? "");
+      const methodKey = methodToUse.toLowerCase();
+
+      // 2️⃣ Determine endpoint based on actual method
+      if (methodKey.includes("tele")) {
         endpoint = `${BACKEND_URL}/depositer/tele`;
         body.transactionId = txId;
         body.amount = Number(resolvedAmount);
-      } else if (isBoa) {
+      } else if (methodKey.includes("boa")) {
         endpoint = `${BACKEND_URL}/depositer/tele`;
         body.transactionId = txId;
         body.amount = Number(resolvedAmount);
-      } else if (isCbeBirr || isEbirr) {
+      } else if (
+        methodKey.includes("cbebirr") ||
+        methodKey.includes("cbe birr")
+      ) {
         const lbExtracted =
           extractCbeBirrTxnIdOnly(txId || smsText) ||
           extractCbeBirrTxnIdOnly(smsText) ||
@@ -305,14 +314,35 @@ const Deposit = () => {
           return;
         }
 
-        endpoint = `${BACKEND_URL}/depositer/${isEbirr ? "ebirr" : "cbe-birr"}`;
+        endpoint = `${BACKEND_URL}/depositer/cbe-birr`;
         txId = lbExtracted;
         body.transactionId = txId;
         body.amount = Number(resolvedAmount || 0);
-      } else if (isCbe) {
+
+        const phoneNumber = extractCbeBirrPhoneNumber(smsText || txId);
+        if (phoneNumber) {
+          body.phoneNumber = phoneNumber;
+        }
+      } else if (methodKey.includes("ebirr")) {
+        const ebirrExtracted =
+          extractEbirrTransactionId(txId || smsText) ||
+          extractEbirrTransactionId(smsText) ||
+          txId;
+
+        if (!ebirrExtracted) {
+          showError("እባክዎ የተገባ የSMS ወይም የTransaction ID ያጥፉ።");
+          setLoading(false);
+          return;
+        }
+
+        endpoint = `${BACKEND_URL}/depositer/ebirr`;
+        txId = ebirrExtracted;
+        body.transactionId = txId;
+        body.amount = Number(resolvedAmount || 0);
+      } else if (methodKey.includes("cbe")) {
         const cbeExtracted = extractCbeTransactionId(
           txId,
-          selectedMethod.accountInfo,
+          selectedMethod?.accountInfo,
         );
 
         if (!cbeExtracted) {
@@ -430,6 +460,25 @@ const Deposit = () => {
     return null;
   };
 
+  // ✅ EBIRR - Extract the receipt token from URL
+  const extractEbirrTransactionId = (text: string) => {
+    if (!text) return null;
+
+    const clean = text.replace(/\s+/g, " ");
+
+    // Extract from ebirr.com URL pattern: receipt.ebirr.com/kaafimf/Ubc4NLz2nuqPyBmiBYinOA
+    const urlMatch = clean.match(
+      /receipt\.ebirr\.com\/[^\s/]+\/([A-Za-z0-9_\-]+)/i,
+    );
+    if (urlMatch) return urlMatch[1];
+
+    // Fallback: look for the token pattern in the text (alphanumeric with underscores, 20+ chars)
+    const tokenMatch = clean.match(/([A-Za-z0-9_\-]{20,})/);
+    if (tokenMatch) return tokenMatch[1];
+
+    return null;
+  };
+
   // ✅ BOA
   const extractBoaTransactionId = (text: string) => {
     if (!text) return null;
@@ -520,6 +569,62 @@ const Deposit = () => {
 
     const direct = clean.match(/\bD[A-Z0-9]{7,19}\b/i);
     if (direct) return direct[0].toUpperCase();
+
+    return null;
+  };
+
+  const extractCbeBirrPhoneNumber = (text: string) => {
+    if (!text) return null;
+
+    const clean = text.replace(/\s+/g, " ");
+
+    const patterns = [
+      /PH=(\d+)/i,
+      /phone[:\s=]*(\d+)/i,
+      /account balance is[^0]*(\d{9,})/i,
+      /(0?9\d{8})/,
+    ];
+
+    for (const pattern of patterns) {
+      const match = clean.match(pattern);
+      if (match) {
+        let phone = match[1];
+        // Normalize: Remove leading 0, ensure it starts with 251
+        if (phone.startsWith("251")) {
+          return phone; // Already has country code
+        }
+        if (phone.startsWith("0")) {
+          phone = phone.substring(1); // Remove leading 0
+        }
+        return "251" + phone; // Add country code
+      }
+    }
+
+    return null;
+  };
+
+  // Detect payment method from SMS content
+  const detectPaymentMethodFromSMS = (
+    smsText: string,
+  ): "CBEBirr" | "Ebirr" | "Telebirr" | null => {
+    if (!smsText) return null;
+
+    const text = smsText.toLowerCase();
+
+    // Check for CBEBirr first (most specific)
+    if (text.includes("cbe birr") || text.includes("cbepay")) {
+      return "CBEBirr";
+    }
+
+    // Check for Telebirr BEFORE Ebirr (because "telebirr" contains "ebirr")
+    if (text.includes("telebirr") || text.includes("ethiotelecom")) {
+      return "Telebirr";
+    }
+
+    // Check for Ebirr (but not CBE Birr)
+    if (text.includes("ebirr") && !text.includes("cbe")) {
+      return "Ebirr";
+    }
 
     return null;
   };
@@ -843,7 +948,9 @@ const Deposit = () => {
                   className="bg-black p-[4px] text-xs rounded-md "
                 >
                   <div className="flex justify-between text-slate-400 font-semibold text-xs">
-                    <span className="truncate text-xs">TX: {tx.transactionId}</span>
+                    <span className="truncate text-xs">
+                      TX: {tx.transactionId}
+                    </span>
                     <span className="text-blue-400">{tx.amount} ETB</span>
                   </div>
 

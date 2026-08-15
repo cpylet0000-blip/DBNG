@@ -82,15 +82,14 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Missing userId or transactionId" });
 
     // Check if transactionId is already approved (exists in Transaction table)
-
     const existingTransaction = await prisma.transaction.findFirst({
       where: { transactionId },
     });
 
     if (existingTransaction) {
-      return res
-        .status(409)
-        .json({ error: "This transaction has already been approved." });
+      return res.status(409).json({
+        error: "This transaction has already been approved.",
+      });
     }
 
     // Prevent multiple pending deposits for the same user
@@ -98,12 +97,11 @@ router.post("/", async (req, res) => {
       where: { userId: Number(userId), status: "pending" },
     });
     if (existingPending)
-      return res
-        .status(409)
-        .json({ error: "ያልተጠናቀቀ የገቢ ጥያቄ አለዎት፣ እባክዎ እስኪጠናቀቅ በትዕግስት ይጠብቁን።" });
+      return res.status(409).json({
+        error: "ያልተጠናቀቀ የገቢ ጥያቄ አለዎት፣ እባክዎ እስኪጠናቀቅ በትዕግስት ይጠብቁን።",
+      });
 
     // Fetch and parse the PDF to get all details
-
     const url = `https://apps.cbe.com.et:100/?id=${transactionId}`;
     const details = await getCBETransactionDetails(url);
     if (!details || !details.amount)
@@ -168,140 +166,82 @@ router.post("/", async (req, res) => {
         err.meta.target &&
         err.meta.target.includes("transactionId")
       ) {
-        return res
-          .status(409)
-          .json({
-            error:
-              "This transaction has already been approved (unique constraint).",
-          });
+        return res.status(409).json({
+          error:
+            "This transaction has already been approved (unique constraint).",
+        });
       }
       throw err;
     }
-    res.json({ success: true, transaction, deposit });
+    return res.json({ success: true, transaction, deposit });
   } catch (err) {
-    res.status(500).json({ error: "Failed to create deposit requested" });
+    console.error("❌ Default deposit error:", err.message);
+    return res.status(500).json({ error: "Failed to create deposit request" });
   }
 });
 
 router.post("/teleBirr", async (req, res) => {
   try {
-    const { userId, transactionId } = req.body;
-    if (!userId || !transactionId)
-      return res.status(400).json({ error: "Missing userId or transactionId" });
-    // Check if transactionId is already approved (exists in Transaction table)
-    console.log(
-      "Checking existing transactions for transactionId:",
-      transactionId,
-    );
-
-    const existingTransactions = await prisma.transaction.findFirst({
-      where: { transactionId },
-    });
-    if (existingTransactions) {
-      return res
-        .status(409)
-        .json({ error: "This transaction has already been approved." });
-    }
-    const url = `https://transactioninfo.ethiotelecom.et/receipt/${transactionId}`;
-    const details = await parseTelebirr(url);
-    console.log("Parsed TeleBirr details:", details);
-    if (!details || !details.amount) {
+    const { userId, transactionId, amount } = req.body;
+    if (!userId || !transactionId || !amount) {
       return res
         .status(400)
-        .json({ error: "Transaction details not found or amount missing." });
+        .json({ error: "Missing userId, transactionId or amount" });
     }
-    const expectedTeleReceiver = process.env.TELEBIRR_RECEIVER_NAME;
-    const expectedTeleAccount = process.env.TELEBIRR_RECEIVER_ACCOUNT;
-    console.log(details);
+
+    const normalizedId = String(transactionId).trim();
+    const normalizedAmount = Number(amount);
+
     if (
-      details.receiverName !== expectedTeleReceiver ||
-      details.receiverPhone !== expectedTeleAccount
+      !normalizedId ||
+      Number.isNaN(normalizedAmount) ||
+      normalizedAmount <= 0
     ) {
-      return res.status(400).json({ error: "Invalid receiver or account." });
+      return res.status(400).json({
+        error: "Invalid transaction data",
+      });
     }
-    // Check if transactionId is already approved (exists in Transaction table)
+
+    // Check if transactionId is already approved
     const existingTransaction = await prisma.transaction.findFirst({
-      where: { transactionId },
+      where: { transactionId: normalizedId },
     });
     if (existingTransaction) {
-      return res
-        .status(409)
-        .json({ error: "This transaction has already been approved." });
+      return res.status(409).json({
+        error: "This transaction has already been approved.",
+      });
     }
+
     // Prevent multiple pending deposits for the same user
     const existingPending = await prisma.depositRequest.findFirst({
       where: { userId: Number(userId), status: "pending" },
     });
-    if (existingPending)
-      return res
-        .status(409)
-        .json({ error: "ያልተጠናቀቀ የገቢ ጥያቄ አለዎት፣ እባክዎ እስኪጠናቀቅ በትዕግስት ይጠብቁን።" });
-
-    console.log("TeleBirr details:", details);
-
-    let transaction, deposit;
-    try {
-      transaction = await prisma.transaction.create({
-        data: {
-          userId: Number(userId),
-          amount: Number(details.amount),
-          transactionId,
-          paymentDateTime: details.date,
-          receiver: details.receiverName,
-          account: details.receiverPhone,
-        },
+    if (existingPending) {
+      return res.status(409).json({
+        error: "You have a pending deposit request",
       });
-      deposit = await prisma.depositRequest.create({
-        data: {
-          userId: Number(userId),
-          amount: Number(details.amount),
-          transactionId,
-          paymentDateTime: details.date,
-          receiver: details.receiverName,
-          account: details.receiverPhone,
-          status: "approved",
-        },
-      });
-      // Only update balance after both transaction and depositRequest are saved
-      await prisma.userBalance.upsert({
-        where: { userId: Number(userId) },
-        update: {
-          currentBalance: { increment: Number(details.amount) },
-          totalDeposits: { increment: Number(details.amount) },
-        },
-        create: {
-          userId: Number(userId),
-          currentBalance: Number(details.amount),
-          totalDeposits: Number(details.amount),
-        },
-      });
-      await prisma.user.update({
-        where: { id: Number(userId) },
-        data: {
-          rewardBalance: {
-            increment: Math.floor(Number(details.amount) * 0.1),
-          },
-        },
-      });
-    } catch (err) {
-      if (
-        err.code === "P2002" &&
-        err.meta &&
-        err.meta.target &&
-        err.meta.target.includes("transactionId")
-      ) {
-        return res
-          .status(409)
-          .json({
-            error:
-              "This transaction has already been approved (unique constraint).",
-          });
-      }
-      throw err;
     }
-    res.json({ success: true, transaction, deposit });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to process TeleBirr transaction" });
+
+    // Build TeleBirr receipt URL for admin verification
+    const verificationUrl = `https://transactioninfo.ethiotelecom.et/receipt/${normalizedId}`;
+
+    const deposit = await prisma.depositRequest.create({
+      data: {
+        userId: Number(userId),
+        amount: normalizedAmount,
+        transactionId: normalizedId,
+        paymentDateTime: new Date().toISOString(),
+        receiver: "Telebirr Manual Approval",
+        account: "Telebirr",
+        status: "pending",
+        methodInfo: `Telebirr:${verificationUrl}`,
+      },
+    });
+
+    return res.json({ success: true, deposit, verificationUrl });
+  } catch (err) {
+    console.error("❌ TeleBirr deposit error:", err.message);
+    return res.status(500).json({ error: "Failed to create deposit request" });
   }
 });
 router.post("/tele", async (req, res) => {
@@ -329,24 +269,31 @@ router.post("/tele", async (req, res) => {
     const existingPending = await prisma.depositRequest.findFirst({
       where: { userId: Number(userId), status: "pending" },
     });
-    if (existingPending)
-      return res
-        .status(409)
-        .json({ error: "You have a pending deposit request" });
+    if (existingPending) {
+      return res.status(409).json({
+        error: "You have a pending deposit request",
+      });
+    }
+
+    // Build receipt URL for admin verification
+    const verificationUrl = `https://transactioninfo.ethiotelecom.et/receipt/${transactionId}`;
+
     const deposit = await prisma.depositRequest.create({
       data: {
         userId: Number(userId),
         amount: Number(amount),
         transactionId,
-        paymentDateTime: "date",
-        receiver: "receiver",
-        account: "account",
+        paymentDateTime: new Date().toISOString(),
+        receiver: "Telebirr/BOA Manual Approval",
+        account: "Telebirr",
         status: "pending",
+        methodInfo: `Telebirr:${verificationUrl}`,
       },
     });
-    res.json({ success: true, deposit });
+    return res.json({ success: true, deposit, verificationUrl });
   } catch (err) {
-    res.status(500).json({ error: "Failed to create deposit request" });
+    console.error("❌ Tele deposit error:", err.message);
+    return res.status(500).json({ error: "Failed to create deposit request" });
   }
 });
 
@@ -377,7 +324,7 @@ export async function parseCBEBirr(transactionId) {
   try {
     const phone = process.env.cbeBirrReceiverAccount;
 
-    const url = `https://cbepay1.cbe.com.et/aureceipt?TID=${transactionId}&PH=0${phone}`;
+    const url = `https://cbepay1.cbe.com.et/aureceipt?TID=${transactionId}&PH=${phone}`;
 
     const response = await axios.get(url, {
       responseType: "arraybuffer",
@@ -494,7 +441,7 @@ export async function parseCBEBirr(transactionId) {
 }
 router.post("/cbe-birr", async (req, res) => {
   try {
-    const { userId, transactionId, amount } = req.body;
+    const { userId, transactionId, amount, phoneNumber } = req.body;
 
     if (!userId || !transactionId || !amount) {
       return res.status(400).json({
@@ -504,6 +451,7 @@ router.post("/cbe-birr", async (req, res) => {
 
     const normalizedId = String(transactionId).trim();
     const normalizedAmount = Number(amount);
+    const normalizedPhone = phoneNumber ? String(phoneNumber).trim() : null;
 
     if (
       !normalizedId ||
@@ -533,6 +481,12 @@ router.post("/cbe-birr", async (req, res) => {
       });
     }
 
+    // Build CBE receipt URL for admin verification
+    let verificationUrl = `https://cbepay1.cbe.com.et/aureceipt?TID=${normalizedId}`;
+    if (normalizedPhone) {
+      verificationUrl += `&PH=${normalizedPhone}`;
+    }
+
     const deposit = await prisma.depositRequest.create({
       data: {
         userId: Number(userId),
@@ -540,15 +494,18 @@ router.post("/cbe-birr", async (req, res) => {
         transactionId: normalizedId,
         paymentDateTime: new Date().toISOString(),
         receiver: "CBEBirr Manual Approval",
-        account: "CBEBirr",
+        account: normalizedPhone || "CBEBirr",
         status: "pending",
+        methodInfo: `CBEBirr:${verificationUrl}`,
       },
     });
 
-    return res.json({ success: true, deposit });
+    return res.json({ success: true, deposit, verificationUrl });
   } catch (err) {
-    console.error("❌ CBEBirr pending request error:", err);
-    return res.status(500).json({ error: "Failed to create deposit request" });
+    console.error("❌ CBEBirr deposit error:", err.message, err.stack);
+    return res
+      .status(500)
+      .json({ error: "Failed to create deposit request: " + err.message });
   }
 });
 
@@ -593,6 +550,10 @@ router.post("/ebirr", async (req, res) => {
       });
     }
 
+    // Build Ebirr receipt URL for admin verification
+    // Ebirr uses: https://receipt.ebirr.com/kaafimf/[transaction_token]
+    const verificationUrl = `https://receipt.ebirr.com/kaafimf/${normalizedId}`;
+
     const deposit = await prisma.depositRequest.create({
       data: {
         userId: Number(userId),
@@ -602,13 +563,16 @@ router.post("/ebirr", async (req, res) => {
         receiver: "Ebirr Manual Approval",
         account: "Ebirr",
         status: "pending",
+        methodInfo: `Ebirr:${verificationUrl}`,
       },
     });
 
-    return res.json({ success: true, deposit });
+    return res.json({ success: true, deposit, verificationUrl });
   } catch (err) {
-    console.error("❌ Ebirr pending request error:", err);
-    return res.status(500).json({ error: "Failed to create deposit request" });
+    console.error("❌ Ebirr deposit error:", err.message, err.stack);
+    return res
+      .status(500)
+      .json({ error: "Failed to create deposit request: " + err.message });
   }
 });
 
