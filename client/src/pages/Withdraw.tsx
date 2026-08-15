@@ -333,20 +333,20 @@ const Withdraw = () => {
                   {history.map((tx) => (
                     <div
                       key={tx.id}
-                      className="bg-black p-2 text-xs rounded-md border border-slate-800"
+                      className="bg-black  text-xs rounded-md p-[4px]"
                     >
                       <div className="flex justify-between text-white font-semibold">
-                        <span>#{tx.id}</span>
-                        <span className="text-yellow-400">{tx.amount} ETB</span>
+                        <span className="text-slate-400 text-xs">Status:</span>
+                        <span className="text-blue-600">{tx.amount} ETB</span>
                       </div>
 
-                      <div className="flex justify-between text-slate-400 mt-1">
+                      <div className="flex justify-between text-slate-400 mt-0.5 ">
                         <span
                           className={
                             tx.status === "approved"
                               ? "text-green-400"
                               : tx.status === "pending"
-                                ? "text-yellow-400"
+                                ? "text-blue-600"
                                 : "text-red-400"
                           }
                         >

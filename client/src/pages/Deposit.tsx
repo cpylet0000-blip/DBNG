@@ -81,7 +81,7 @@ const Deposit = () => {
       if (!text) return text;
       // common backend messages -> Amharic
       if (text.includes("This transaction has already been approved"))
-        return "ይህ ግብይት ቀድሞ ተፈቀዷል።";
+        return "ይህ ግብይት ቀድሞ ተፈፅሟል።";
       if (
         text.includes("Missing userId") ||
         text.includes("Missing userId or transactionId")
@@ -840,10 +840,10 @@ const Deposit = () => {
               {recentHistory.map((tx) => (
                 <div
                   key={tx.id}
-                  className="bg-black p-2 text-xs rounded-md border border-slate-800"
+                  className="bg-black p-[4px] text-xs rounded-md "
                 >
-                  <div className="flex justify-between text-slate-300 font-semibold">
-                    <span className="truncate">TX: {tx.transactionId}</span>
+                  <div className="flex justify-between text-slate-400 font-semibold text-xs">
+                    <span className="truncate text-xs">TX: {tx.transactionId}</span>
                     <span className="text-blue-400">{tx.amount} ETB</span>
                   </div>
 
