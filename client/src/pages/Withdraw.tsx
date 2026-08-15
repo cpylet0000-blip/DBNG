@@ -186,6 +186,7 @@ const Withdraw = () => {
 
                 let img = "/CBEbirr.png";
                 if (key.includes("tele")) img = "/Telebirr.png";
+                else if (key.includes("cbe")) img = "/CBEbirr.png";
                 else if (key.includes("ebirr")) img = "/Ebirr.png";
 
                 return (
