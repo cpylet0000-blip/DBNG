@@ -5,6 +5,30 @@ import { PrismaClient } from '@prisma/client';
 const router = express.Router();
 const prisma = new PrismaClient();
 
+// Get bot telegram IDs from environment
+function getBotTelegramIds() {
+  const botAccountsEnv = process.env.BOT_ACCOUNTS || '';
+  if (!botAccountsEnv) return [];
+  return botAccountsEnv.split(',').map(id => id.trim()).filter(id => id.length > 0);
+}
+
+// Get bot user IDs from database
+async function getBotUserIds() {
+  const botTelegramIds = getBotTelegramIds();
+  if (botTelegramIds.length === 0) return [];
+  
+  const botUsers = await prisma.user.findMany({
+    where: {
+      telegramId: {
+        in: botTelegramIds
+      }
+    },
+    select: { id: true }
+  });
+  
+  return botUsers.map(u => u.id);
+}
+
 // Get financial analytics with filtering
 router.get('/earnings', async (req, res) => {
   try {
@@ -19,6 +43,9 @@ router.get('/earnings', async (req, res) => {
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const offset = (pageNum - 1) * limitNum;
+
+    // Get bot user IDs to exclude from balance calculations
+    const botUserIds = await getBotUserIds();
 
     // Calculate date range based on period
     let dateFilter = {};
@@ -92,8 +119,9 @@ router.get('/earnings', async (req, res) => {
       }
     });
 
-    // Get total current balance of all users
+    // Get total current balance of all users (EXCLUDING BOTS)
     const totalUserBalance = await prisma.userBalance.aggregate({
+      where: botUserIds.length > 0 ? { userId: { notIn: botUserIds } } : {},
       _sum: {
         currentBalance: true
       }
@@ -139,6 +167,9 @@ router.get('/earnings', async (req, res) => {
 // Get financial summary statistics
 router.get('/financial-summary', async (req, res) => {
   try {
+    // Get bot user IDs to exclude from balance calculations
+    const botUserIds = await getBotUserIds();
+    
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -214,8 +245,9 @@ router.get('/financial-summary', async (req, res) => {
       _count: { id: true }
     });
 
-    // Get total current balance of all users
+    // Get total current balance of all users (EXCLUDING BOTS)
     const totalUserBalance = await prisma.userBalance.aggregate({
+      where: botUserIds.length > 0 ? { userId: { notIn: botUserIds } } : {},
       _sum: {
         currentBalance: true
       }

@@ -84,7 +84,7 @@ export default function Navbar() {
 
   return (
     <nav className="w-full bg-white border-b border-gray-100 fixed top-0 left-0 z-50 shadow-sm">
-      <div className="px-4 sm:px-6 max-w-7xl mx-auto">
+      <div className="px-4 sm:px-6 w-full">
         <div className="flex items-center justify-between h-16">
           {/* Logo/Brand */}
           <div className="flex items-center">
@@ -102,8 +102,8 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Desktop Navigation - COMPACT and PROFESSIONAL */}
-          <div className="hidden lg:flex items-center space-x-0.5">
+          {/* Desktop Navigation - SCROLLABLE */}
+          <div className="hidden lg:flex items-center overflow-x-auto space-x-1 flex-1 mx-4 pb-2">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeItem === item.href;
@@ -114,8 +114,8 @@ export default function Navbar() {
                   href={item.href}
                   onClick={() => setActiveItem(item.href)}
                   className={`
-                    flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg
-                    transition-all duration-200 ease-out
+                    flex items-center gap-2 px-3 py-2 text-xs md:text-sm font-medium rounded-lg whitespace-nowrap
+                    transition-all duration-200 ease-out flex-shrink-0
                     ${
                       isActive
                         ? "text-gray-900 bg-linear-to-r from-gray-50 to-gray-100/50 shadow-sm"
@@ -130,7 +130,7 @@ export default function Navbar() {
                       ${isActive ? "text-gray-900" : "text-gray-500 group-hover:text-gray-700"}
                     `}
                   />
-                  <span className="whitespace-nowrap">{item.label}</span>
+                  <span>{item.label}</span>
                   {isActive && (
                     <div className="absolute bottom-0 left-3 right-3 h-0.5 bg-linear-to-r from-blue-500 to-indigo-500 rounded-full" />
                   )}
