@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ghion",
-  description: "Ghion",
+  title: "HD",
+  description: "HD",
   manifest: "/manifest.json",
   icons: {
     icon: "/icons/abol-192.svg",

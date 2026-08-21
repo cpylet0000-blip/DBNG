@@ -189,7 +189,7 @@ export const registerBotHandlers = (bot) => {
 
     // Send welcome image with caption
     const imagePath = path.join(__dirname, "../../public/welcome.png");
-    const welcomeCaption = `<b>✨ እንኳን ወደ ግዮን በደህና መጡ${firstName ? `, ${firstName}` : ""}! ✨</b>
+    const welcomeCaption = `<b>✨ እንኳን ወደ ኤች-ዲ በደህና መጡ${firstName ? `, ${firstName}` : ""}! ✨</b>
 
 🎲 <b>ቢንጎ ይጫዎቱ፣ ስፒን ያድርጉ፣ ዕድልዎን ይሞክሩ!</b>
 💰 <b>ታላላቅ የገንዘብ ሽልማቶች ይጠብቁዎታል!</b>
@@ -271,7 +271,7 @@ export const registerBotHandlers = (bot) => {
 
       // Create invite link with referrer ID
       const inviteLink = `https://t.me/${botUsername}?start=ref_${telegramId}`;
-      const shareText = "ከእኔ ጋር ግዮን BINGO | SPIN ይጫወቱና አሁኑኑ ያሸንፉ! 🎮💰";
+      const shareText = "ከእኔ ጋር ኤች-ዲ BINGO | SPIN ይጫወቱና አሁኑኑ ያሸንፉ! 🎮💰";
 
       // Build keyboard based on registration status
       const inviteKeyboard = [];
@@ -295,7 +295,7 @@ export const registerBotHandlers = (bot) => {
 
       bot.sendMessage(
         chatId,
-        `<b>🎁 የመጋበዣ ሊንክዎን ለጓደኞችዎ ያጋሩ!</b>\n\n🔗 <b>የእርስዎ ሊንክ:</b>\n${inviteLink}\n\n<i>ይህንን ሊንክ ለጓደኞችዎ በመላክ ግዮን ቢንጎን አብረው ይጫወቱ!</i> 🎲✨`,
+        `<b>🎁 የመጋበዣ ሊንክዎን ለጓደኞችዎ ያጋሩ!</b>\n\n🔗 <b>የእርስዎ ሊንክ:</b>\n${inviteLink}\n\n<i>ይህንን ሊንክ ለጓደኞችዎ በመላክ ኤች-ዲ ቢንጎን አብረው ይጫወቱ!</i> 🎲✨`,
         {
           parse_mode: "HTML",
           reply_markup: {
@@ -361,7 +361,7 @@ export const registerBotHandlers = (bot) => {
 
       bot.sendMessage(
         chatId,
-        `📋 <b>ሊንኩን ኮፒ ያድርጉ 👇</b>\n\n${inviteLink}\n\n<i>ለጓደኞችዎ በመላክ ግዮን ቢንጎን አብረው ይጫወቱ!</i> 🎮✨`,
+        `📋 <b>ሊንኩን ኮፒ ያድርጉ 👇</b>\n\n${inviteLink}\n\n<i>ለጓደኞችዎ በመላክ ኤች-ዲ ቢንጎን አብረው ይጫወቱ!</i> 🎮✨`,
         { parse_mode: "HTML" },
       );
     } else if (query.data === "play_now") {

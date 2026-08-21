@@ -96,7 +96,7 @@ export default function Navbar() {
               <div className="relative">
                 <div className="absolute inset-0 bg-linear-to-r from-blue-500 to-indigo-600 rounded-lg blur opacity-20 group-hover:opacity-30 transition-opacity duration-300" />
                 <span className="text-xl font-bold tracking-tight relative bg-linear-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                  Dawit Games
+                  HD Games
                 </span>
               </div>
             </Link>
