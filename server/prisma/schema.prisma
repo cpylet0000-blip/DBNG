@@ -227,6 +227,7 @@ model User {
   spinWinBets     SpinWinBet[]
 
   spinWinJackpotWins SpinWinJackpotWin[]
+  depositBonuses  DepositBonus[]
 }
 
 model TransferHistory {
@@ -474,6 +475,24 @@ model StakeBonus {
   @@unique([stake])
 }
 
+// ==============================
+// DEPOSIT BONUS TRACKER TABLE
+// ==============================
+model DepositBonus {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique
+  originalDeposit Float    @default(0) // Cumulative total deposits
+  bonusGiven      Float    @default(0) // Cumulative bonus given
+  bonusRemaining  Float    @default(0) // How much bonus is still active
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ==============================
 // PASSWORD RESET OTP TABLE
 // ==============================
 model PasswordResetOtp {
@@ -483,7 +502,7 @@ model PasswordResetOtp {
   expiresAt  DateTime
   isUsed     Boolean  @default(false)
   createdAt  DateTime @default(now())
-  }
+}
 
 // ==============================
 // PLAYER HISTORY TABLE
