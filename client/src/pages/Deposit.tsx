@@ -759,7 +759,7 @@ const Deposit = () => {
         >
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm h-screen" />
           <div
-            className="relative w-full max-w-md bg-gray-800/50 rounded-2xl shadow-xl p-5 z-10 border-[1.5px] border-blue-700/30 h-[70vh]"
+            className="relative w-full max-w-md bg-gray-800/50 rounded-2xl shadow-xl p-5 z-10 border-[1.5px] border-blue-700/30 h-[420px]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="h-full overflow-auto">
@@ -828,7 +828,7 @@ const Deposit = () => {
                         }}
                         onBlur={() => parseSmsNow()}
                         placeholder="Paste SMS here..."
-                        className="w-full h-[100px] mt-1 border-[1.5px] border-slate-800 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 outline-none bg-black"
+                        className="w-full h-[100px] mt-1 border-[1.5px] border-slate-800 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:border-blue-600 outline-none bg-black"
                       />
                       {/* Mobile fallback: parse & enable submit manually */}
                       {/* fallback removed; parsing runs on input/paste/blur */}
