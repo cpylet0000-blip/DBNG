@@ -35,14 +35,10 @@ const SIM_BINGO_BIAS_USERS = (
   .split(",")
   .map((item) => item.trim())
   .filter(Boolean);
-const SIM_BINGO_BIAS_MIN_CALLS = Math.max(
-  1,
-  Number(process.env.SIM_BINGO_BIAS_MIN_CALLS || 5),
-);
-const SIM_BINGO_BIAS_MAX_CALLS = Math.max(
-  SIM_BINGO_BIAS_MIN_CALLS,
-  Number(process.env.SIM_BINGO_BIAS_MAX_CALLS || 15),
-);
+const SIM_BINGO_BIAS_BASE_CALLS = Number(process.env.SIM_BINGO_BIAS_BASE_CALLS || 28);
+const SIM_BINGO_BIAS_REDUCTION_PER_5_PLAYERS = Number(process.env.SIM_BINGO_BIAS_REDUCTION_PER_5_PLAYERS || 1);
+const SIM_BINGO_BIAS_MIN_CALLS = Number(process.env.SIM_BINGO_BIAS_MIN_CALLS || 14);
+const SIM_BINGO_BIAS_RANDOMNESS = Number(process.env.SIM_BINGO_BIAS_RANDOMNESS || 2);
 // demo winner names are provided by runtime demoBotConfig (in-memory)
 
 // Set of Telegram IDs for bot accounts — winners with these IDs always get
@@ -90,21 +86,19 @@ function clearBiasState(stake, roomNumber, sessionId) {
   biasSessionState.delete(getBiasStateKey(stake, roomNumber, sessionId));
 }
 
-// Calculate trigger count based on total cards taken by the user
-function getTriggerCountByCardCount(cardCount) {
-  let baseCalls = randomInt(SIM_BINGO_BIAS_MIN_CALLS, SIM_BINGO_BIAS_MAX_CALLS);
-  if (cardCount < 10) {
-    return baseCalls;
-  } else if (cardCount >= 10 && cardCount <= 19) {
-    return Math.max(1, baseCalls - 5);
-  } else if (cardCount >= 20 && cardCount <= 29) {
-    return Math.max(1, baseCalls - 8);
-  } else if (cardCount >= 30 && cardCount <= 39) {
-    return Math.max(1, baseCalls - 10);
-  } else if (cardCount >= 40) {
-    return Math.max(1, baseCalls - 13);
-  }
-  return baseCalls;
+// Calculate trigger count based on total players in the session
+function getTriggerCountByPlayerCount(playerCount) {
+  const baseCalls = SIM_BINGO_BIAS_BASE_CALLS;
+  const reductionPer5 = SIM_BINGO_BIAS_REDUCTION_PER_5_PLAYERS;
+  const minCalls = SIM_BINGO_BIAS_MIN_CALLS;
+  const randomness = SIM_BINGO_BIAS_RANDOMNESS;
+  
+  const reduction = Math.floor(playerCount / 5) * reductionPer5;
+  const baseTrigger = Math.max(minCalls, baseCalls - reduction);
+  
+  // Add random variation: ±randomness
+  const variation = randomInt(-randomness, randomness);
+  return Math.max(minCalls, baseTrigger + variation);
 }
 
 function buildBiasState(session) {
@@ -144,9 +138,12 @@ function buildBiasState(session) {
   const finalNumber = randomItem(chosenPattern.numbers);
   if (!finalNumber) return null;
 
-  // Calculate total cards selected by all users in this session (users may have more than one card)
-  const cardCount = Array.isArray(session.players) ? session.players.length : 0;
-  const triggerCallCount = getTriggerCountByCardCount(cardCount);
+  // Calculate trigger based on player count (not card count)
+  const playerCount = Array.isArray(session.players) ? session.players.length : 0;
+  const triggerCallCount = getTriggerCountByPlayerCount(playerCount);
+
+  console.log(`[BIAS] Created bias state: ${playerCount} players → trigger at call ${triggerCallCount}`);
+  console.log(`[BIAS] Target user: ${targetPlayer.userId}, Pattern: ${chosenPattern.cells.length} cells, Final number: ${finalNumber}`);
 
   return {
     targetUserId: targetPlayer.userId,
@@ -184,7 +181,9 @@ function drawBiasedBall(session, stake, roomNumber, calledNumbers) {
 
   // BEFORE trigger: Completely random drawing
   if (nextCallIndex < state.triggerCallCount) {
-    return randomItem(remaining);
+    const randomBall = randomItem(remaining);
+    console.log(`[BIAS] Call ${nextCallIndex}/${state.triggerCallCount}: Random ball ${randomBall}`);
+    return randomBall;
   }
 
   // AT/AFTER trigger: 100% pattern numbers until game ends
@@ -194,10 +193,13 @@ function drawBiasedBall(session, stake, roomNumber, calledNumbers) {
 
   if (patternRemaining.length > 0) {
     // 100% chance to call pattern numbers
-    return randomItem(patternRemaining);
+    const biasedBall = randomItem(patternRemaining);
+    console.log(`[BIAS] Call ${nextCallIndex}: FORCING pattern ball ${biasedBall} (${patternRemaining.length} pattern balls left)`);
+    return biasedBall;
   }
 
   // All pattern numbers called - draw random from remaining
+  console.log(`[BIAS] Call ${nextCallIndex}: All pattern numbers called, random draw`);
   return randomItem(remaining);
 }
 
