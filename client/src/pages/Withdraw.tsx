@@ -94,14 +94,7 @@ const Withdraw = () => {
     }, 5000);
   };
   const handleWithdraw = async () => {
-    if (!hasMinGamesForWithdraw) {
-      setShowAlert(true);
-      showError(
-        `ብር ለማውጣት ቢያንስ ተጨማሪ ${minGamesRequired - playedGames} ጨዋታዎችን መጫወት አለብዎት`,
-      );
-      return;
-    }
-    const netBalance = amountNumber + 50;
+const netBalance = amountNumber + 50;
     if (currentBalance < netBalance) {
       showError("ከወጪ በኋላ ቀሪ ሒሳብዎ ከ50 ETB በላይ መሆን አለበት");
       return;
@@ -111,6 +104,14 @@ const Withdraw = () => {
       showError("ብር ለማውጣት ቢያንስ 50 ETB ገቢ (deposit) ማድረግ አለብዎት");
       return;
     }
+    if (!hasMinGamesForWithdraw) {
+      setShowAlert(true);
+      showError(
+        `ብር ለማውጣት ቢያንስ ተጨማሪ ${minGamesRequired - playedGames} ጨዋታዎችን መጫወት አለብዎት`,
+      );
+      return;
+    }
+    
     if (hasPending) {
       showError("በሂደት ላይ ያለ የወጪ ጥያቄ አለዎት");
       return;

@@ -759,7 +759,7 @@ const Deposit = () => {
         >
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm h-screen" />
           <div
-            className="relative w-full max-w-md bg-gray-800/50 rounded-2xl shadow-xl p-5 z-10 border-[1.5px] border-blue-700/30 h-[420px]"
+            className="relative w-full max-w-md bg-gray-800/50 rounded-2xl shadow-xl p-5 z-10 border-[1.5px] border-blue-700/30 h-[425px]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="h-full overflow-auto">
